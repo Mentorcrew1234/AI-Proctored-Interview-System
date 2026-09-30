@@ -14,5 +14,7 @@
 -- 255 fits roughly 20 skills at an average of 12 characters. Longer than that
 -- is a CV, not a filter key, and UserService caps it.
 ALTER TABLE candidate_profiles
-    ADD COLUMN location VARCHAR(120) NULL AFTER college_name,
-    ADD COLUMN skills   VARCHAR(255) NULL AFTER location;
+    ADD COLUMN location VARCHAR(120) NULL AFTER college_name;
+
+ALTER TABLE candidate_profiles
+    ADD COLUMN skills VARCHAR(255) NULL AFTER location;
