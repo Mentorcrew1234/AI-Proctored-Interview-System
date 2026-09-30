@@ -5,7 +5,6 @@
   "type": "module",
   "description": "Candidate exam screen: browser-side proctoring and the AI interview",
   "scripts": {
-    "postinstall": "node scripts/copy-wasm.mjs",
     "predev": "node scripts/copy-wasm.mjs",
     "dev": "vite",
     "prebuild": "node scripts/copy-wasm.mjs",
