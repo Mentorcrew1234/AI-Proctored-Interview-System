@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in · Proctored Interview System</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+<!--
+  data-theme starts at "dark" (the signature red/black look) and is flipped by
+  the switch below. app.js resumes whichever choice was last made on this
+  browser; a fresh browser always sees the signature theme first.
+-->
+<main class="login-wrap" data-theme="dark">
+
+    <!--
+      A style preference for whoever is looking at this screen right now - not
+      a setting on any account, and not sent to the server. Useful for a demo
+      audience who would read the bold theme as too much: switch once here and
+      the sign-in screen matches the rest of the application exactly, because
+      "Classic" is built from the same tokens the rest of the application uses,
+      not a second colour choice that could drift from it.
+    -->
+    <div class="theme-switch" data-theme-toggle role="group" aria-label="Login page style">
+        <button type="button" class="theme-switch-option" data-set-theme="dark" aria-pressed="true">Bold</button>
+        <button type="button" class="theme-switch-option" data-set-theme="light" aria-pressed="false">Classic</button>
+    </div>
+
+    <div class="auth-frame-split">
+
+        <!--
+          The story panel. Nothing here is functional - it exists so the first
+          thing anyone ever sees is a statement of what this system actually
+          does, not a bare form. The three lines are the three things the
+          system overview opens with: what runs where, and what is never sent
+          anywhere.
+        -->
+        <aside class="auth-hero">
+            <span class="auth-hero-mark" aria-hidden="true">AI</span>
+            <div>
+                <p class="auth-eyebrow">Proctored Interviews</p>
+                <h1>Interviews that watch honestly, and say so.</h1>
+                <p>
+                    One workflow from invite to report: a browser-side AI monitors the
+                    room, a voice interview asks the questions, and every observation
+                    reaches your recruiter labelled for exactly what it is.
+                </p>
+            </div>
+            <ul class="auth-features">
+                <li>
+                    <span class="auth-feature-tick" aria-hidden="true">&#10003;</span>
+                    <span>Video never leaves the browser &mdash; only short, timestamped observations are sent.</span>
+                </li>
+                <li>
+                    <span class="auth-feature-tick" aria-hidden="true">&#10003;</span>
+                    <span>A detection is an observation, not an accusation &mdash; it is never scored as guilt.</span>
+                </li>
+                <li>
+                    <span class="auth-feature-tick" aria-hidden="true">&#10003;</span>
+                    <span>Every recommendation is deterministic and explained, never a black box.</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- The actual sign-in card. -->
+        <div class="login-card">
+            <div class="login-brand">
+                <span class="sidebar-mark" aria-hidden="true">AI</span>
+                <span class="sidebar-brand-text">
+                    Proctored Interviews
+                    <small>AI interview platform</small>
+                </span>
+            </div>
+
+            <h1>Sign in</h1>
+            <p class="hint" style="margin-bottom:20px">
+                Use the account your recruiter or administrator gave you.
+            </p>
+
+            <div class="alert alert-error" role="alert" th:if="${param.error}">
+                Invalid email or password.
+            </div>
+            <div class="alert alert-success" role="status" th:if="${param.logout}">
+                You have been signed out.
+            </div>
+            <div class="alert alert-success" role="status" th:if="${param.reset}">
+                Your password has been changed. Sign in with the new one.
+            </div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="field">
+                    <label for="username">Email</label>
+                    <input type="email" id="username" name="username" required autofocus
+                           autocomplete="username" placeholder="you@example.com">
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="field-control">
+                        <input type="password" id="password" name="password" required
+                               autocomplete="current-password">
+                        <!-- Cosmetic convenience only: it toggles the input's own type
+                             attribute client-side and touches nothing else. With
+                             JavaScript disabled the field is still a normal, working
+                             password input. -->
+                        <button type="button" class="field-toggle" data-toggle-password="#password"
+                                aria-label="Show password">Show</button>
+                    </div>
+                </div>
+                <button type="submit">Sign in</button>
+            </form>
+
+            <p style="margin-top:14px"><a th:href="@{/forgot-password}">Forgot your password?</a></p>
+
+            <!--
+              Prototype demo accounts. A real deployment would not print these.
+
+              Each button fills the two fields above with that account's real,
+              plainly-printed credentials - it does not sign in on its own, and
+              it grants nothing a person reading the text next to it could not
+              already type themselves. With JavaScript disabled the buttons are
+              inert and the credentials remain readable as plain text.
+            -->
+            <div class="demo-accounts">
+                <p class="demo-accounts-label">Demo accounts</p>
+
+                <button type="button" class="demo-account"
+                        data-fill-account data-email="admin@demo.local" data-password="Admin@123">
+                    <span class="demo-account-icon" aria-hidden="true">&#9881;&#65039;</span>
+                    <span class="demo-account-info">
+                        <span class="demo-account-role">Administrator</span>
+                        <span class="demo-account-creds">admin@demo.local &middot; Admin@123</span>
+                    </span>
+                    <span class="demo-account-cta" aria-hidden="true">Use &rarr;</span>
+                </button>
+
+                <button type="button" class="demo-account"
+                        data-fill-account data-email="recruiter@demo.local" data-password="Recruiter@123">
+                    <span class="demo-account-icon" aria-hidden="true">&#128188;</span>
+                    <span class="demo-account-info">
+                        <span class="demo-account-role">Recruiter</span>
+                        <span class="demo-account-creds">recruiter@demo.local &middot; Recruiter@123</span>
+                    </span>
+                    <span class="demo-account-cta" aria-hidden="true">Use &rarr;</span>
+                </button>
+
+                <button type="button" class="demo-account"
+                        data-fill-account data-email="candidate@demo.local" data-password="Candidate@123">
+                    <span class="demo-account-icon" aria-hidden="true">&#127891;</span>
+                    <span class="demo-account-info">
+                        <span class="demo-account-role">Candidate</span>
+                        <span class="demo-account-creds">candidate@demo.local &middot; Candidate@123</span>
+                    </span>
+                    <span class="demo-account-cta" aria-hidden="true">Use &rarr;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

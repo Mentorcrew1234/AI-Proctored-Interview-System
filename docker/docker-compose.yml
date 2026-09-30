@@ -1,0 +1,51 @@
+# Basic two-service stack: the app plus its own MySQL. Not what the project's
+# actual VPS deployment runs (that's bare-metal + systemd, documented in
+# docs/system/deployment/DEPLOYMENT.md) - this is for building the image and
+# testing it end to end on a single machine.
+#
+# Usage (from the repo root):
+#   cp docker/.env.example docker/.env      # then fill in real values
+#   docker compose --env-file docker/.env -f docker/docker-compose.yml up --build
+#
+# App: http://localhost:8080
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in docker/.env}
+      MYSQL_DATABASE: ${DB_NAME:-proctor_interview}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-proctor_interview}
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in docker/.env}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in docker/.env - at least 32 characters}
+      INTERVIEW_MODE: ${INTERVIEW_MODE:-NORMAL}
+      INTERVIEW_AI_MODE: ${INTERVIEW_AI_MODE:-MOCK}
+      INTERVIEW_QUESTION_MODE: ${INTERVIEW_QUESTION_MODE:-FIXED}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.1-flash-lite}
+    ports:
+      - "8080:8080"
+
+volumes:
+  db-data:

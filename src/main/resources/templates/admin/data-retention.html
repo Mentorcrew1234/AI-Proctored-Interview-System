@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!--
+  Retention overview and the erasure log.
+
+  This page reports; it does not act. Nothing here deletes anything on a
+  schedule - see RetentionProperties for why a prototype should not have a cron
+  job whose failure mode is unrecoverable destruction.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Data retention')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('data-retention')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Data retention')}"></div>
+
+    <main class="page">
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <section class="card">
+            <h3>Retention window</h3>
+            <p class="hint" style="margin-bottom:14px">
+                Interview data is expected to be kept for
+                <strong th:text="${overview.months()}">24</strong> months. <strong>Nothing is
+                deleted automatically</strong> &mdash; this is a report, so that somebody
+                can see data has outlived its purpose and decide what to do about it.
+            </p>
+
+            <div class="meta-grid">
+                <span>Window</span>
+                <strong th:text="${overview.months()} + ' months'">24 months</strong>
+                <span>Cutoff</span>
+                <strong th:text="${#temporals.format(overview.cutoff(), 'dd MMM yyyy')}">date</strong>
+                <span>Interviews older than the window</span>
+                <strong th:text="${overview.interviewsOlder()}">0</strong>
+                <span>Interviews in total</span>
+                <strong th:text="${overview.interviewsTotal()}">0</strong>
+            </div>
+
+            <div class="alert alert-warning" style="margin-top:16px" th:if="${overview.anythingOld()}">
+                <strong th:text="${overview.interviewsOlder()}">0</strong>
+                interview(s) are older than the retention window. Erasing a candidate's
+                data is done per candidate, from
+                <a th:href="@{/admin/users}">Users</a> &rarr; Data.
+            </div>
+
+            <div class="empty" style="margin-top:16px" th:unless="${overview.anythingOld()}">
+                <div class="empty-title">Nothing is past its retention window</div>
+                <p style="margin-bottom:0">
+                    Every interview on record is inside the
+                    <span th:text="${overview.months()}">24</span>-month window.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h3>Erasure log</h3>
+            <p class="hint" style="margin-bottom:12px">
+                A record that data was erased. Deliberately holds <strong>no name or
+                email</strong> &mdash; keeping them would mean an erasure request left the
+                identity behind in a new table.
+            </p>
+
+            <div class="empty" th:if="${#lists.isEmpty(log)}">
+                <div class="empty-title">Nothing has been erased</div>
+                <p style="margin-bottom:0">No data deletion has been performed on this system.</p>
+            </div>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(log)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">When</th>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Scope</th>
+                        <th scope="col">By</th>
+                        <th scope="col" class="td-num">Rows</th>
+                        <th scope="col">Reason</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="d : ${log}">
+                        <td class="nowrap" th:text="${d.deletedAtText()}">date</td>
+                        <!-- An account id, not a person. After the deletion it
+                             identifies nobody, which is the point. -->
+                        <td th:text="'user #' + ${d.subjectUserId()}">user #0</td>
+                        <td th:text="${d.scopeLabel()}">Interview data only</td>
+                        <td th:text="${d.performedByName()}">Admin</td>
+                        <td class="td-num" th:text="${d.totalRows()}">0</td>
+                        <td th:text="${d.reason()} ?: '-'">-</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

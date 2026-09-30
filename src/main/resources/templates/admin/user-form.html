@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Add User')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('users')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Add user')}"></div>
+
+    <!--
+      Progressive disclosure by role: both profile blocks are rendered, and the
+      script below shows only the one the selected role actually uses. Nothing
+      required is ever hidden - the account section, which is all the required
+      fields, is always visible.
+    -->
+    <main class="page page-narrow">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a th:href="@{/admin/users}">Users</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page">Add user</span>
+        </nav>
+
+        <div class="page-head">
+            <div>
+                <h1>Add a user</h1>
+                <p class="subtitle">
+                    Create a recruiter or candidate account. Fields marked
+                    <span class="req">*</span> are required; the rest is profile detail you can
+                    leave blank.
+                </p>
+            </div>
+        </div>
+
+        <div class="alert alert-error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+        <form th:action="@{/admin/users}" th:object="${form}" method="post">
+            <div class="card">
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Account</h3>
+                        <p>Administrator accounts cannot be created from this screen.</p>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="role">Role <span class="req">*</span></label>
+                            <select id="role" th:field="*{role}">
+                                <option value="CANDIDATE">Candidate</option>
+                                <option value="RECRUITER">Recruiter</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="fullName">Full name <span class="req">*</span></label>
+                            <input type="text" id="fullName" th:field="*{fullName}" autocomplete="name">
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('fullName')}"
+                                 th:errors="*{fullName}"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="email">Email <span class="req">*</span></label>
+                            <input type="email" id="email" th:field="*{email}" autocomplete="off">
+                            <div class="hint">Also their sign-in name. Must be unique.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('email')}"
+                                 th:errors="*{email}"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="password">Temporary password <span class="req">*</span></label>
+                            <input type="text" id="password" th:field="*{password}" autocomplete="off">
+                            <div class="hint">
+                                At least 8 characters. Stored hashed &mdash; this is the only time it is
+                                readable, so pass it on now. There is no email integration.
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('password')}"
+                                 th:errors="*{password}"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section" id="candidate-fields">
+                    <div class="form-section-head">
+                        <h3>Candidate profile <span class="opt">— optional</span></h3>
+                        <p>Background detail kept on the account. Each interview sets its own
+                           experience and domain, so nothing here changes how one is scored.</p>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="phone">Phone</label>
+                            <input type="text" id="phone" th:field="*{phone}" autocomplete="tel">
+                        </div>
+                        <div class="field">
+                            <label for="collegeName">College name</label>
+                            <input type="text" id="collegeName" th:field="*{collegeName}"
+                                   maxlength="150" placeholder="e.g. PSG College of Technology">
+                            <div class="hint">Most candidates here are students. Leave blank if it
+                                does not apply.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('collegeName')}"
+                                 th:errors="*{collegeName}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="location">Location</label>
+                            <input type="text" id="location" th:field="*{location}"
+                                   maxlength="120" placeholder="e.g. Coimbatore">
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('location')}"
+                                 th:errors="*{location}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="skills">Skills</label>
+                            <input type="text" id="skills" th:field="*{skills}"
+                                   maxlength="255" placeholder="e.g. Java, Spring Boot, SQL">
+                            <div class="hint">Comma-separated. Each one becomes its own filter
+                                option on the candidates page.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('skills')}"
+                                 th:errors="*{skills}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="candidateType">Candidate type</label>
+                            <select id="candidateType" th:field="*{candidateType}">
+                                <option value="FRESHER">Fresher</option>
+                                <option value="EXPERIENCED">Experienced</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="experienceYears">Years of experience</label>
+                            <input type="number" id="experienceYears" min="0" max="50"
+                                   th:field="*{experienceYears}">
+                        </div>
+                        <div class="field">
+                            <label for="primaryDomain">Primary domain</label>
+                            <input type="text" id="primaryDomain" th:field="*{primaryDomain}"
+                                   placeholder="e.g. Java">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section" id="recruiter-fields">
+                    <div class="form-section-head">
+                        <h3>Recruiter profile <span class="opt">— optional</span></h3>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="department">Department</label>
+                            <input type="text" id="department" th:field="*{department}">
+                        </div>
+                        <div class="field">
+                            <label for="designation">Designation</label>
+                            <input type="text" id="designation" th:field="*{designation}">
+                        </div>
+                    </div>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit">Create account</button>
+                    <a class="btn btn-secondary" th:href="@{/admin/users}">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    // Shows only the profile block matching the selected role. Both are always
+    // submitted; the service reads whichever one the role calls for.
+    var roleSelect = document.getElementById('role');
+    var candidateFields = document.getElementById('candidate-fields');
+    var recruiterFields = document.getElementById('recruiter-fields');
+
+    function syncRoleFields() {
+        var isCandidate = roleSelect.value === 'CANDIDATE';
+        candidateFields.hidden = !isCandidate;
+        recruiterFields.hidden = isCandidate;
+    }
+
+    roleSelect.addEventListener('change', syncRoleFields);
+    syncRoleFields();
+</script>
+</body>
+</html>

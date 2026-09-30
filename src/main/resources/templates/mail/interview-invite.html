@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!--
+  Interview invitation.
+
+  Deliberately plain: tables and inline styles, no external CSS, no images, no
+  web fonts. Mail clients strip <style> blocks and block remote content, so
+  anything cleverer would arrive looking broken for some candidates. What must
+  survive in every client is the date, the link and the honest note about
+  monitoring - so those are all plain text and inline colour only.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:24px;background:#f4f5f7;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#1f2430">
+
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e3e6ec;border-radius:10px">
+    <tr>
+        <td style="padding:28px 32px 8px 32px">
+            <p style="margin:0 0 4px 0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#5a6273">Interview scheduled</p>
+            <h1 style="margin:0;font-size:22px;line-height:1.3" th:text="${interviewName}">Interview</h1>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:12px 32px 0 32px;font-size:15px;line-height:1.6">
+            <p style="margin:0 0 16px 0">
+                Hello <strong th:text="${candidateName}">Candidate</strong>,
+            </p>
+            <p style="margin:0 0 20px 0">
+                <span th:text="${recruiterName}">Recruiter</span> has scheduled an
+                interview for you. The details are below.
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:0 32px">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+                   style="background:#f7f8fa;border:1px solid #e3e6ec;border-radius:8px;font-size:14px">
+                <tr>
+                    <td style="padding:14px 16px;color:#5a6273;width:150px">Date and time</td>
+                    <td style="padding:14px 16px;font-weight:600" th:text="${scheduledAt}">Date</td>
+                </tr>
+                <tr>
+                    <td style="padding:0 16px 14px 16px;color:#5a6273">Duration</td>
+                    <td style="padding:0 16px 14px 16px">
+                        <span th:text="${durationMinutes}">30</span> minutes
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:0 16px 14px 16px;color:#5a6273">Questions</td>
+                    <td style="padding:0 16px 14px 16px" th:text="${questionCount}">5</td>
+                </tr>
+                <tr>
+                    <td style="padding:0 16px 14px 16px;color:#5a6273">Type</td>
+                    <td style="padding:0 16px 14px 16px">
+                        <span th:text="${interviewKind}">Technical</span> &middot;
+                        <span th:text="${domain}">Domain</span>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:24px 32px 8px 32px" align="center">
+            <a th:href="${inviteLink}"
+               style="display:inline-block;padding:13px 30px;background:#2c5bd8;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;font-size:15px">
+                Start your interview
+            </a>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:4px 32px 20px 32px;font-size:12px;color:#5a6273" align="center">
+            <!-- Some clients strip the button; the raw link must always be usable. -->
+            If the button does not work, copy this link into your browser:<br>
+            <span th:text="${inviteLink}" style="word-break:break-all;color:#2c5bd8">link</span>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:0 32px">
+            <div style="background:#eef2fd;border:1px solid #d3ddf8;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.6">
+                <strong>The link alone is not access.</strong> You must sign in with your
+                own account, and it must be the account this interview was scheduled for.
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:20px 32px 0 32px;font-size:14px;line-height:1.6">
+            <p style="margin:0 0 8px 0;font-weight:600">Before you begin</p>
+            <ul style="margin:0;padding-left:20px;color:#3b4252">
+                <li>Use Google Chrome or Microsoft Edge on a desktop or laptop.</li>
+                <li>You will be asked for camera and microphone access.</li>
+                <li>The interview runs in fullscreen and is timed from when you start,
+                    so joining late costs you nothing.</li>
+                <li>You can answer by speaking or by typing.</li>
+            </ul>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:16px 32px 28px 32px">
+            <!-- The same wording rule the UI and the report follow: a detection is
+                 an observation, never an accusation. -->
+            <div style="background:#f7f8fa;border:1px solid #e3e6ec;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.6;color:#3b4252">
+                Your session is monitored by automated proctoring. Detection runs inside
+                your own browser and <strong>your video is never uploaded</strong> &mdash;
+                only short summaries are recorded, and they are shared with your recruiter
+                as observations, not as accusations.
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:0 32px 28px 32px;font-size:12px;color:#8a90a0;border-top:1px solid #eceef3">
+            <p style="margin:14px 0 0 0">
+                This is an automated message. If you were not expecting it, please contact
+                your recruiter.
+            </p>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

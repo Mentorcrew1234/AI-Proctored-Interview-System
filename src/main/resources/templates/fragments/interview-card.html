@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  One interview on the candidate's own dashboard.
+
+  A fragment-only file (like fragments/layout.html) - it never renders on its
+  own, only via th:replace from home.html.
+
+  A row rather than a card: a candidate typically has a handful of interviews,
+  and rows put four of them on screen where cards put one, which is the
+  difference between seeing the list and scrolling it.
+-->
+<div th:fragment="interviewRow(row)" class="interview-row">
+
+    <!-- When, as a compact block - the thing a candidate scans for first. -->
+    <div class="when" aria-hidden="true">
+        <div class="when-day" th:text="${#strings.substring(row.scheduledDateText(), 0, 2)}">01</div>
+        <div class="when-mon" th:text="${#strings.substring(row.scheduledDateText(), 3, 6)}">JAN</div>
+        <div class="when-time" th:text="${row.scheduledTimeText()}">10:00</div>
+    </div>
+
+    <div class="interview-row-main">
+        <h3 th:text="${row.displayName()}">Interview name</h3>
+        <div class="interview-row-meta">
+            <span th:text="${row.scheduledDateText()}">date</span> at
+            <span th:text="${row.scheduledTimeText()}">time</span>
+            &middot; <span th:text="${row.domain()}">Java</span>
+            &middot; <span th:text="${row.interviewType().name() == 'TECHNICAL'} ? 'Technical' : 'HR / General'">Technical</span>
+            &middot; <span th:text="${row.questionCount()} + ' questions'">5 questions</span>
+        </div>
+
+        <!-- Secondary detail stays collapsed: it matters when a candidate is
+             checking something specific, not while scanning the list. -->
+        <details class="disclose" style="margin-top:8px">
+            <summary>Full details</summary>
+            <div class="meta-grid" style="margin-top:10px">
+                <span>Interview</span><strong th:text="${row.displayName()}">name</strong>
+                <span>Date</span><strong th:text="${row.scheduledDateText()}">date</strong>
+                <span>Time</span><strong th:text="${row.scheduledTimeText()}">time</strong>
+                <span>Domain</span><strong th:text="${row.domain()}">Java</strong>
+                <span>Interview type</span>
+                <strong th:text="${row.interviewType().name() == 'TECHNICAL'} ? 'Technical' : 'HR / General'">Technical</strong>
+                <span>Experience type</span>
+                <strong th:text="${#strings.capitalize(#strings.toLowerCase(row.candidateType()))}">Fresher</strong>
+                <th:block th:if="${row.experienceYears() != null}">
+                    <span>Years of experience</span>
+                    <strong th:text="${row.experienceYears()}">0</strong>
+                </th:block>
+                <span>Language</span>
+                <strong th:text="${#strings.capitalize(#strings.toLowerCase(row.language()))}">English</strong>
+                <span>Questions</span><strong th:text="${row.questionCount()}">5</strong>
+            </div>
+        </details>
+    </div>
+
+    <div class="interview-row-actions">
+        <span class="badge" th:classappend="'badge-' + ${#strings.toLowerCase(row.status())}"
+              th:text="${#strings.replace(row.status(), '_', ' ')}">SCHEDULED</span>
+
+        <a th:if="${row.status().name() == 'IN_PROGRESS'}"
+           class="btn btn-sm" th:href="@{'/exam/' + ${row.inviteToken()}}">Resume</a>
+
+        <a th:if="${row.status().name() == 'SCHEDULED' and row.startable()}"
+           class="btn btn-sm" th:href="@{'/exam/' + ${row.inviteToken()}}">Start</a>
+
+        <span th:if="${row.status().name() == 'SCHEDULED' and !row.startable()}" class="hint">
+            Opens at the scheduled time
+        </span>
+
+        <a th:if="${row.reportViewable()}"
+           class="btn btn-secondary btn-sm" th:href="@{'/reports/' + ${row.sessionId()}}">View result</a>
+
+        <span th:if="${row.status().name() == 'COMPLETED' and !row.reportViewable()}" class="hint">
+            Result not shared yet
+        </span>
+    </div>
+</div>
+
+</body>
+</html>

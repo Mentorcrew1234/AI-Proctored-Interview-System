@@ -1,0 +1,2392 @@
+{
+  "_comment": "Offline fallback questions, used when Gemini is unavailable. Every question is scenario-based - no definition questions, matching the same rule the LLM prompt enforces. expectedPoints double as the rubric for the heuristic scorer, so they must be concrete keywords a real answer would contain. Each pool holds 10 questions - 4 EASY, 4 MEDIUM, 2 HARD - which is what lets FallbackLlmClient fill the largest allowed interview (10 questions) from any experience band without ever repeating one. Entries are ordered easiest first within a pool.",
+  "TECHNICAL": {
+    "Java": [
+      {
+        "difficulty": "EASY",
+        "text": "You are building the checkout for an online store that sells both physical products and digital downloads. Only physical products need shipping. How would you model this with classes and interfaces so adding a third product type later does not break existing code?",
+        "expectedPoints": [
+          "common interface or abstract base type",
+          "separate shipping behaviour from product data",
+          "polymorphism instead of if-else on type",
+          "open for extension, existing code unchanged"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A teammate's method returns null when a user is not found, and the app keeps crashing with NullPointerException in different places. What would you change and why?",
+        "expectedPoints": [
+          "Optional as the return type",
+          "throw a specific exception for a genuine error case",
+          "fail fast rather than propagate null",
+          "callers forced to handle the missing case"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your service returns a list of orders to a mobile app, and the app crashes for customers who have no orders because the response is null. What would you change and why?",
+        "expectedPoints": [
+          "return an empty collection instead of null",
+          "Collections.emptyList or List.of",
+          "callers no longer need null checks",
+          "make the contract explicit and documented"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You are asked to add a discount rule that applies to one customer type, without disturbing the existing pricing code. How would you structure it?",
+        "expectedPoints": [
+          "separate rule behind an interface",
+          "open for extension, closed for modification",
+          "avoid a growing if-else chain",
+          "each rule independently unit tested"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your service reads a 2 GB CSV file and the JVM runs out of memory. Walk through how you would find the cause and fix it.",
+        "expectedPoints": [
+          "stream line by line instead of loading fully",
+          "BufferedReader or Files.lines",
+          "avoid holding all records in a list",
+          "process in batches",
+          "measure heap before and after"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Two users click 'book the last seat' at the same moment and both bookings succeed. How would you stop that happening?",
+        "expectedPoints": [
+          "race condition on a shared resource",
+          "database transaction",
+          "optimistic locking with a version column or pessimistic lock",
+          "unique constraint as a final guard",
+          "recheck availability inside the transaction"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A scheduled job in your application runs twice on some nights, and you cannot reproduce it locally. How would you investigate?",
+        "expectedPoints": [
+          "more than one instance running the schedule",
+          "distributed lock so only one runs",
+          "logs tagged with instance identity",
+          "make the job idempotent so a repeat is harmless",
+          "check deployment and clustering configuration"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your API returns a 500 whenever a downstream service is slow, and users see nothing useful. How would you improve this?",
+        "expectedPoints": [
+          "explicit connect and read timeouts",
+          "translate failures into a meaningful response",
+          "fallback or cached value where acceptable",
+          "circuit breaker to stop hammering it",
+          "log the real cause server-side without leaking it"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "An API endpoint responds in 50 ms in testing but 4 seconds in production with real data. Describe how you would diagnose it.",
+        "expectedPoints": [
+          "measure before guessing, add timing or profiling",
+          "N+1 query problem",
+          "missing database index",
+          "check the actual SQL being issued",
+          "data volume difference between environments",
+          "caching only after finding the real cause"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A long-running service gradually slows down and throws OutOfMemoryError after several days, but never during a short test. How would you find the cause?",
+        "expectedPoints": [
+          "memory leak rather than a single large allocation",
+          "capture and analyse a heap dump",
+          "look for collections or caches that only grow",
+          "unbounded static map or listeners never removed",
+          "compare retained size between two dumps"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A service using a fixed thread pool stops responding under load, though CPU is idle. What would you suspect?",
+        "expectedPoints": [
+          "threads blocked on a slow dependency",
+          "pool exhausted, queue growing",
+          "timeouts on outbound calls",
+          "bulkheads or a separate pool"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain how you would find and fix a memory leak in a long-running Java service.",
+        "expectedPoints": [
+          "heap dump and dominator analysis",
+          "collections that only grow",
+          "listeners or thread locals retained",
+          "reproduce under load, verify after"
+        ]
+      }
+    ],
+    "Python": [
+      {
+        "difficulty": "EASY",
+        "text": "You wrote a script that processes customer records and it silently produces wrong totals for some rows. How would you go about finding the problem?",
+        "expectedPoints": [
+          "reproduce with a small failing input",
+          "add logging or use a debugger",
+          "check type coercion and missing values",
+          "write a test that captures the bad case"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A colleague's script works on their machine but fails on yours with an import error. What is likely wrong and how would you prevent it recurring?",
+        "expectedPoints": [
+          "different installed packages",
+          "virtual environment",
+          "requirements.txt or pinned dependencies",
+          "reproducible environment setup"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A function in your codebase changes a list that was passed into it, and callers keep being surprised when their data is modified. How would you fix it?",
+        "expectedPoints": [
+          "avoid mutating the caller's arguments",
+          "copy the input or return a new list",
+          "mutable default argument pitfall",
+          "document whether a function mutates"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "The same data-cleaning steps are copied into three different scripts, and a bug fixed in one is still present in the others. How would you organise this?",
+        "expectedPoints": [
+          "extract into a shared module",
+          "import rather than copy-paste",
+          "one place to fix a bug",
+          "write tests for the shared function"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You need to call an external API 10,000 times. Doing it in a loop takes hours. How would you speed it up while staying a good API citizen?",
+        "expectedPoints": [
+          "concurrency with threads or asyncio",
+          "I/O bound so threads help despite the GIL",
+          "batching if the API supports it",
+          "respect rate limits",
+          "retry with backoff on failures"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your data pipeline crashes halfway through a nightly run and has to start again from the beginning. How would you redesign it?",
+        "expectedPoints": [
+          "checkpointing or saving progress",
+          "idempotent steps so reruns are safe",
+          "process in resumable chunks",
+          "log what completed",
+          "handle partial failure without corrupting output"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your service reads configuration from environment variables and fails in production with a confusing error when one is missing. How would you improve it?",
+        "expectedPoints": [
+          "validate all configuration at startup",
+          "fail fast with a message naming the missing key",
+          "sensible defaults where they exist",
+          "never log secret values",
+          "one place that loads and checks config"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Two parts of your program write to the same log file and the output is occasionally interleaved and unreadable. How would you handle it?",
+        "expectedPoints": [
+          "concurrent writes to one resource",
+          "a single writer or a queue of messages",
+          "locking around the write",
+          "use the logging module rather than manual writes",
+          "separate files per worker as an alternative"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A Django endpoint gets slower every week even though traffic is flat. How would you investigate?",
+        "expectedPoints": [
+          "data growth over time",
+          "query without an index scanning more rows",
+          "N+1 queries via the ORM",
+          "profile actual queries",
+          "measure rather than assume"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A service that handles image uploads uses far more memory than expected as soon as several users upload at once. How would you diagnose and reduce it?",
+        "expectedPoints": [
+          "whole files loaded into memory at once",
+          "stream or process in chunks",
+          "limit concurrent uploads",
+          "use a memory profiler to confirm",
+          "release references and avoid caching every image"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your CPU-bound Python program does not speed up with threads. Explain why and what you would do instead.",
+        "expectedPoints": [
+          "the global interpreter lock",
+          "processes rather than threads",
+          "native extensions that release it",
+          "measure whether it is CPU bound at all"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you make a Python service's dependencies reproducible across machines and over time?",
+        "expectedPoints": [
+          "pinned versions, a lock file",
+          "isolated environment",
+          "the build does not reach the network unpredictably",
+          "upgrade deliberately, not incidentally"
+        ]
+      }
+    ],
+    "Web Development": [
+      {
+        "difficulty": "EASY",
+        "text": "Users report a form 'sometimes submits twice' and they get charged twice. How would you fix it on both the front end and the back end?",
+        "expectedPoints": [
+          "disable the button during submit",
+          "client side alone is not enough",
+          "idempotency key on the request",
+          "server-side duplicate detection"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your page looks correct on your laptop but broken on a phone. Describe how you would approach fixing it.",
+        "expectedPoints": [
+          "responsive layout, flexbox or grid",
+          "media queries",
+          "viewport meta tag",
+          "test at real breakpoints",
+          "relative units instead of fixed pixels"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Users say that clicking Save gives no visible feedback, so they are never sure whether it worked. How would you improve this?",
+        "expectedPoints": [
+          "disable the control and show a loading state",
+          "explicit success confirmation",
+          "clear error message when it fails",
+          "keep the entered data on failure"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "The first load of your site is very slow on mobile, and most of the weight is images. What would you do?",
+        "expectedPoints": [
+          "compress and correctly size the images",
+          "modern formats such as WebP",
+          "lazy load anything below the fold",
+          "responsive images with srcset",
+          "serve from a CDN"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A dashboard takes 6 seconds to appear because it makes 12 API calls. How would you make it feel faster?",
+        "expectedPoints": [
+          "parallel rather than sequential requests",
+          "combine endpoints or batch",
+          "render progressively rather than waiting for all",
+          "loading skeletons for perceived speed",
+          "cache data that rarely changes"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You are storing a login token in the browser. What are the risks and how would you reduce them?",
+        "expectedPoints": [
+          "XSS can read localStorage",
+          "httpOnly cookie",
+          "short expiry",
+          "HTTPS only",
+          "CSRF considerations for cookies"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A user logs out on a shared computer, presses the browser Back button, and their data is still on screen. How would you address it?",
+        "expectedPoints": [
+          "invalidate the session server-side",
+          "clear client-side state on logout",
+          "cache-control no-store on authenticated pages",
+          "never rely on the client alone",
+          "re-check authentication when the page is restored"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Every time you deploy, users who already have the app open start seeing errors until they refresh. How would you handle it?",
+        "expectedPoints": [
+          "stale references to old asset filenames",
+          "content-hashed filenames per build",
+          "keep previous assets available briefly",
+          "detect a new version and prompt the user to reload",
+          "handle a failed chunk load gracefully"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "After a release, some users see a blank page but you cannot reproduce it. How would you find out what is happening?",
+        "expectedPoints": [
+          "client-side error reporting or logging",
+          "cached stale assets",
+          "browser or version differences",
+          "source maps to read minified stack traces",
+          "feature detection and graceful degradation"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must show live updates to thousands of simultaneously connected users without overwhelming the server. How would you approach it?",
+        "expectedPoints": [
+          "compare polling, server-sent events and WebSockets",
+          "cost of holding many open connections",
+          "batch or throttle updates rather than sending every change",
+          "only send what changed",
+          "degrade gracefully when the connection drops"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A page scores badly on real-user performance despite a fast server. What would you measure and change?",
+        "expectedPoints": [
+          "render-blocking resources",
+          "image sizing and format",
+          "critical path and lazy loading",
+          "measure at a percentile, on real devices"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you make a form accessible and usable for someone using a screen reader?",
+        "expectedPoints": [
+          "labels associated with inputs",
+          "errors announced, not only coloured",
+          "keyboard order and focus management",
+          "test with an actual screen reader"
+        ]
+      }
+    ],
+    "Database": [
+      {
+        "difficulty": "EASY",
+        "text": "A report query that used to take 1 second now takes 30 seconds as the table grew. What would you check first?",
+        "expectedPoints": [
+          "EXPLAIN the query plan",
+          "full table scan versus index",
+          "add an index on the filtered column",
+          "measure before changing anything"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You are designing tables for a blog where posts have many tags and tags apply to many posts. How would you structure it?",
+        "expectedPoints": [
+          "many-to-many relationship",
+          "join or junction table",
+          "foreign keys to both tables",
+          "composite primary key or unique constraint on the pair"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You need to store phone numbers for users, and some users have several. A colleague suggests one comma-separated column. What would you do?",
+        "expectedPoints": [
+          "separate table with a foreign key",
+          "one row per phone number",
+          "comma-separated values cannot be indexed or validated",
+          "querying and updating becomes simple"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A colleague wants to store each order's computed total as a column on the orders table. What would you consider?",
+        "expectedPoints": [
+          "denormalisation trade-off",
+          "the stored value can drift from the source of truth",
+          "recomputing is safer but costs time",
+          "acceptable if refreshed in the same transaction",
+          "useful for historical prices that must not change"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A money transfer deducts from one account but the credit to the other fails. How do you make sure this cannot leave the data wrong?",
+        "expectedPoints": [
+          "single transaction wrapping both operations",
+          "atomicity, all or nothing",
+          "rollback on failure",
+          "ACID properties"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your team wants to add an index to every column 'to make things fast'. How would you respond?",
+        "expectedPoints": [
+          "indexes slow down writes",
+          "extra storage cost",
+          "index only what queries filter or join on",
+          "measure with real query patterns",
+          "composite index column order matters"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "The nightly reporting query locks tables and blocks the live application for several minutes. How would you fix it?",
+        "expectedPoints": [
+          "run reporting against a replica",
+          "read-only transaction or snapshot isolation",
+          "reduce rows scanned with better indexes",
+          "process in smaller batches",
+          "schedule off-peak"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You must delete millions of old rows from a live table without taking the system down. How would you do it?",
+        "expectedPoints": [
+          "delete in bounded batches",
+          "avoid one enormous transaction",
+          "index the column used to select old rows",
+          "watch replication lag and locks",
+          "consider partitioning and dropping a partition"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must add a NOT NULL column to a table with 50 million rows in a live system. How would you do it without downtime?",
+        "expectedPoints": [
+          "adding with a default can lock the table",
+          "add as nullable first",
+          "backfill in batches",
+          "then add the constraint",
+          "test on a copy first",
+          "monitor replication lag"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Two services write to the same table and you are seeing occasional lost updates, where one service's change disappears. How would you diagnose and fix it?",
+        "expectedPoints": [
+          "read-modify-write race between the two",
+          "optimistic locking with a version column",
+          "SELECT FOR UPDATE to lock the row",
+          "transaction isolation level matters",
+          "make the write idempotent or atomic in SQL"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A query is fast in development and slow in production on the same schema. What explains that?",
+        "expectedPoints": [
+          "data volume and distribution",
+          "statistics and plan choice",
+          "index not selective on real data",
+          "read the actual execution plan"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain how you would choose an isolation level, using a case where the default causes a bug.",
+        "expectedPoints": [
+          "what anomalies each level permits",
+          "lost update or phantom read",
+          "cost of stricter isolation",
+          "explicit locking as an alternative"
+        ]
+      }
+    ],
+    "Software Engineering": [
+      {
+        "difficulty": "EASY",
+        "text": "You join a team with no tests and are asked to change a critical billing function. How do you proceed safely?",
+        "expectedPoints": [
+          "write characterisation tests for current behaviour first",
+          "small incremental changes",
+          "verify before and after",
+          "avoid changing behaviour and structure at once"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your teammate's pull request works but you find the code hard to follow. How do you handle the review?",
+        "expectedPoints": [
+          "comment on specifics not the person",
+          "ask questions rather than assert",
+          "distinguish blocking issues from preferences",
+          "suggest concrete improvements"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You are asked to estimate a task involving something you have never done before. How do you approach it?",
+        "expectedPoints": [
+          "break it into smaller known pieces",
+          "timebox a spike to learn first",
+          "give a range rather than a single number",
+          "state the assumptions behind the estimate",
+          "revise as you learn more"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A bug report arrives saying only 'the app is broken'. What do you do next?",
+        "expectedPoints": [
+          "ask for steps to reproduce",
+          "environment, version and account affected",
+          "expected versus actual behaviour",
+          "screenshots or logs",
+          "reproduce it before attempting a fix"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A feature is due tomorrow and you realise the design is wrong. What do you do?",
+        "expectedPoints": [
+          "raise it immediately rather than hide it",
+          "explain impact and options with trade-offs",
+          "propose a minimal safe path",
+          "let the stakeholder decide scope",
+          "document the debt taken on"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A bug reaches production that your tests should have caught. What do you do after fixing it?",
+        "expectedPoints": [
+          "add a regression test reproducing the bug",
+          "understand why it was missed",
+          "blameless review of the process",
+          "check for similar cases elsewhere"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your team keeps breaking each other's work when merging, and integration takes a day each time. How would you improve it?",
+        "expectedPoints": [
+          "smaller and more frequent merges",
+          "short-lived branches",
+          "continuous integration running tests on every push",
+          "communicate large refactors in advance",
+          "agree ownership of shared areas"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You need to change the shape of data that another team's service already consumes. How would you roll it out?",
+        "expectedPoints": [
+          "make a backwards-compatible change first",
+          "support both old and new during migration",
+          "version the contract",
+          "coordinate and communicate timing",
+          "remove the old form only once nobody uses it"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You inherit a 3000-line class that everything depends on. How would you improve it without breaking the system?",
+        "expectedPoints": [
+          "do not rewrite wholesale",
+          "add tests around it first",
+          "extract small pieces incrementally",
+          "keep the public interface stable",
+          "refactor continuously alongside feature work"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must deploy a risky change to a system that is used continuously, with no maintenance window. How would you do it safely?",
+        "expectedPoints": [
+          "put it behind a feature flag",
+          "roll out gradually to a small subset first",
+          "monitor error rates and key metrics during rollout",
+          "a rehearsed and fast rollback plan",
+          "keep database changes backwards compatible"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you introduce testing into a codebase that has none, without stopping feature work?",
+        "expectedPoints": [
+          "start where change is riskiest",
+          "characterisation tests first",
+          "test at the seam you can reach",
+          "make it routine, not a project"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A team keeps missing estimates. What would you look at beyond 'estimate better'?",
+        "expectedPoints": [
+          "work broken down too coarsely",
+          "unplanned work and interruptions",
+          "hidden dependencies",
+          "measure cycle time rather than guessing harder"
+        ]
+      }
+    ],
+    "Data Structures & Algorithms": [
+      {
+        "difficulty": "EASY",
+        "text": "You need to check whether a username already exists, from a list of 100,000 names, on every keystroke. How would you make that fast?",
+        "expectedPoints": [
+          "hash set for O(1) lookup",
+          "list scan is O(n) and too slow",
+          "consider a trie for prefix search",
+          "debounce the input"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You must show the 10 most recent orders from a very large collection. What structure and approach would you choose?",
+        "expectedPoints": [
+          "sorting everything is wasteful",
+          "heap or partial selection",
+          "database ORDER BY with LIMIT and an index",
+          "avoid loading all data into memory"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You have two already-sorted lists of scores and must combine them into one sorted list. How would you do it efficiently?",
+        "expectedPoints": [
+          "two pointer merge in a single pass",
+          "O(n + m) rather than sorting again",
+          "concatenate then sort is O(n log n)",
+          "compare heads and advance the smaller"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You need to count how many times each word appears in a large document. What approach would you use?",
+        "expectedPoints": [
+          "hash map from word to count",
+          "single pass over the text O(n)",
+          "normalise case and punctuation first",
+          "memory grows with vocabulary not document length"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A page loads a list of items, and for each item it queries the database for its details. It is slow. What is wrong and how do you fix it?",
+        "expectedPoints": [
+          "N+1 query problem",
+          "batch into a single query",
+          "join or IN clause",
+          "map results in memory afterwards"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You need to detect duplicate uploaded files among millions. How would you approach it?",
+        "expectedPoints": [
+          "hash the file contents",
+          "compare hashes not full bytes",
+          "handle hash collisions by comparing content",
+          "store hashes in a set or index"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You are processing a continuous stream of sensor readings and must always know the maximum of the last 100 values. How would you do it?",
+        "expectedPoints": [
+          "sliding window over the stream",
+          "deque holding candidate maximums",
+          "rescanning all 100 each time is wasteful",
+          "amortised O(1) per reading",
+          "ring buffer to hold the window"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You must run a set of tasks where some cannot start until others have finished. How would you work out a valid order?",
+        "expectedPoints": [
+          "model dependencies as a directed graph",
+          "topological sort",
+          "track in-degrees, Kahn's algorithm",
+          "detect cycles",
+          "report clearly when no valid order exists"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must find the shortest route between two stations in a metro network with different travel times. How would you solve it and what is the cost?",
+        "expectedPoints": [
+          "model as a weighted graph",
+          "Dijkstra's algorithm",
+          "priority queue for efficiency",
+          "complexity roughly E log V",
+          "BFS only works for unweighted graphs"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Given a million transaction amounts, you must quickly find whether any two of them add up to a specific suspicious total. How would you approach it?",
+        "expectedPoints": [
+          "hash set of complements in a single pass",
+          "O(n) time instead of O(n squared) nested loops",
+          "check for the complement before inserting",
+          "handle duplicate values and the exact-half case",
+          "memory versus time trade-off"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must find the top 100 items from a stream of millions without storing them all. How?",
+        "expectedPoints": [
+          "a bounded min-heap",
+          "O(n log k) rather than sorting everything",
+          "memory stays proportional to k",
+          "ties and stability"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain how you would detect a cycle in a large graph, and what changes if it does not fit in memory.",
+        "expectedPoints": [
+          "depth-first with colouring",
+          "iterative to avoid stack depth",
+          "external or partitioned processing",
+          "cost stated honestly"
+        ]
+      }
+    ],
+    "_default": [
+      {
+        "difficulty": "EASY",
+        "text": "A feature you shipped last week is being reported as broken by some users but works fine on your machine. Walk me through how you would find the cause.",
+        "expectedPoints": [
+          "reproduce before theorising",
+          "narrow what differs: data, environment, version",
+          "use logs or errors rather than guessing",
+          "confirm the fix addresses the reported case"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You have been asked to add a small feature to code you have never seen, and there are no tests. What do you do first?",
+        "expectedPoints": [
+          "read and understand before changing",
+          "characterise current behaviour, e.g. a test that pins it",
+          "make the smallest safe change",
+          "avoid unrelated refactoring in the same change"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A colleague's change works but you find it hard to read. How do you raise that in review without it becoming a disagreement about style?",
+        "expectedPoints": [
+          "separate correctness from preference",
+          "explain the cost: who maintains it next",
+          "suggest rather than demand",
+          "defer to a documented convention where one exists"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Something you built handles 100 records fine. Your manager says it will soon handle 100,000. What would you check before promising it still works?",
+        "expectedPoints": [
+          "identify per-record work that repeats",
+          "memory held all at once versus streamed",
+          "any operation that grows faster than linearly",
+          "measure rather than assume"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Two parts of your system need the same piece of logic. One team wants to copy it, the other wants to share it. What would you weigh up?",
+        "expectedPoints": [
+          "duplication is cheaper to change independently",
+          "sharing couples release cycles",
+          "whether the two really are the same rule or coincidentally alike",
+          "cost of divergence if copied"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A nightly job sometimes fails and sometimes succeeds with the same input. How would you approach an intermittent failure like that?",
+        "expectedPoints": [
+          "look for shared state, ordering or timing",
+          "external dependency or resource limits",
+          "make it reproducible before fixing",
+          "add observability if the cause is not visible"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You need to change the shape of data that other teams already depend on. How would you do it without breaking them?",
+        "expectedPoints": [
+          "additive change first, remove later",
+          "support both shapes during a transition",
+          "communicate and give a deadline",
+          "verify who actually depends on it"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your team keeps finding the same class of bug in review. What would you do about it beyond fixing each one?",
+        "expectedPoints": [
+          "make the mistake harder to make",
+          "automate the check if it is mechanical",
+          "document or encode the convention",
+          "treat repeated review comments as a design signal"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A system you own is slow, and profiling shows no single dominant cost - many small things each take a little. How do you proceed?",
+        "expectedPoints": [
+          "question whether the work is needed at all",
+          "batching or caching across the many small costs",
+          "architectural change rather than micro-optimisation",
+          "set a target so you know when to stop"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must choose between a design that is simple now but will need replacing in a year, and one that is complex now but will last. How do you decide?",
+        "expectedPoints": [
+          "how confident is the prediction of future need",
+          "cost of replacement versus cost of carrying complexity",
+          "reversibility of the decision",
+          "who bears the cost, and when"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "An incident happened because of a change you approved in review. How do you handle the aftermath?",
+        "expectedPoints": [
+          "restore service before analysis",
+          "blameless account of what made it possible",
+          "fix the system that let it through, not just the bug",
+          "share what was learned"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You inherit a component nobody understands, it works, and it is central to the product. Business wants a change in it. What is your plan?",
+        "expectedPoints": [
+          "establish behaviour with tests before touching it",
+          "change in small verifiable steps",
+          "keep a rollback path",
+          "resist a rewrite unless justified"
+        ]
+      }
+    ],
+    "JavaScript": [
+      {
+        "difficulty": "EASY",
+        "text": "A button on your page fires its handler twice for a single click after you added a second script. How would you track down and fix that?",
+        "expectedPoints": [
+          "listener registered more than once",
+          "remove or guard duplicate registration",
+          "event bubbling reaching two handlers",
+          "verify with a log or breakpoint"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A colleague writes a loop that fetches ten URLs one after another and it takes ten seconds. The requests do not depend on each other. What would you change?",
+        "expectedPoints": [
+          "run them concurrently rather than sequentially",
+          "Promise.all or equivalent",
+          "handle partial failure",
+          "total time becomes the slowest, not the sum"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your code reads a value from an object that is sometimes missing a nested field, and it crashes. How would you make it safe without hiding real bugs?",
+        "expectedPoints": [
+          "optional chaining or explicit checks",
+          "distinguish absent from falsy",
+          "a default that is genuinely correct",
+          "do not swallow an error that signals a real problem"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Someone reports that a number in your interface shows as 0.30000000000000004. Explain what is happening and what you would do about it.",
+        "expectedPoints": [
+          "binary floating point cannot represent some decimals",
+          "round at the point of display",
+          "integer minor units for money",
+          "do not compare floats for exact equality"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A search box fires a request on every keystroke and the server is struggling. How would you fix it on the client side?",
+        "expectedPoints": [
+          "debounce or throttle the input",
+          "cancel superseded requests",
+          "minimum query length before searching",
+          "avoid rendering a stale response that arrives late"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You have a long-running computation that freezes the page while it runs. What are your options?",
+        "expectedPoints": [
+          "the main thread is blocked",
+          "move the work to a web worker",
+          "break it into chunks that yield to the event loop",
+          "show progress rather than a frozen interface"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain what happens when you attach a click handler inside a loop that uses var, and how the behaviour differs with let.",
+        "expectedPoints": [
+          "var is function scoped, so there is one shared binding",
+          "let creates a binding per iteration",
+          "closures capture the variable, not the value at the time",
+          "the symptom: every handler sees the final value"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your application stores an authentication token in localStorage and a reviewer objects. What is the concern, and what would you weigh up?",
+        "expectedPoints": [
+          "any script on the page can read it",
+          "an injection flaw becomes token theft",
+          "an httpOnly cookie as an alternative",
+          "the CSRF trade-off that cookies bring"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how the event loop, the task queue and the microtask queue interact, using a case where the ordering surprises people.",
+        "expectedPoints": [
+          "promise callbacks run before timers",
+          "microtasks drain fully between tasks",
+          "starvation if microtasks keep queueing more",
+          "why a zero-delay timer is not immediate"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A memory leak appears in a single-page application after navigating between views many times. How would you find it?",
+        "expectedPoints": [
+          "heap snapshots compared over time",
+          "detached DOM nodes retained by listeners",
+          "timers or subscriptions never cleaned up",
+          "closures holding large objects alive"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You need to display a very large list in the browser without the page becoming unusable. What approach would you take?",
+        "expectedPoints": [
+          "virtualise: render only what is visible",
+          "recycle nodes rather than creating thousands",
+          "batch reads and writes to avoid layout thrash",
+          "measure with realistic data volumes"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A third-party script you are required to include occasionally throws and breaks your page. How do you contain the damage?",
+        "expectedPoints": [
+          "load it asynchronously so it cannot block",
+          "isolate it in an iframe where feasible",
+          "global error handling that degrades gracefully",
+          "define what the page does when it fails"
+        ]
+      }
+    ],
+    "React": [
+      {
+        "difficulty": "EASY",
+        "text": "A list you render warns about missing keys. Why does React want them, and what goes wrong if you use the array index?",
+        "expectedPoints": [
+          "keys identify items across renders",
+          "index breaks when the list reorders or items are removed",
+          "component state attaches to the wrong row",
+          "use a stable id from the data"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A form input will not let the user type. Its value comes from state. What is likely wrong?",
+        "expectedPoints": [
+          "a controlled input with no onChange",
+          "value pinned to state that never updates",
+          "wire the handler, or make it uncontrolled",
+          "one source of truth for the value"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You fetch data inside a component and it requests endlessly. What causes that and how do you fix it?",
+        "expectedPoints": [
+          "an effect with no dependency array, or an unstable dependency",
+          "an object or function recreated on every render",
+          "stabilise the dependency or move it outside",
+          "cleanup for requests still in flight"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "When would you lift state up rather than keep it inside a component?",
+        "expectedPoints": [
+          "two siblings need the same value",
+          "a parent needs to react to it",
+          "avoid duplicating and then syncing state",
+          "otherwise keep it as local as it can be"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A component re-renders far more than expected and the page feels slow. How do you investigate, and what would you try?",
+        "expectedPoints": [
+          "profile before optimising",
+          "find what changes identity on each render",
+          "memoise the component or the value",
+          "a context update re-rendering everything below it"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You have a component whose effect subscribes to something. What goes wrong without cleanup, and what does cleanup look like?",
+        "expectedPoints": [
+          "subscriptions accumulate across renders",
+          "updates arriving after unmount",
+          "return a cleanup function from the effect",
+          "unsubscribe symmetrically with subscribe"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Two parts of the application need the same server data. How would you avoid fetching it twice and avoid them disagreeing?",
+        "expectedPoints": [
+          "a shared cache or query layer",
+          "a single source of truth",
+          "invalidation when it changes",
+          "loading and error states shared as well"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain the difference between derived state and stored state, with a case where storing it causes a bug.",
+        "expectedPoints": [
+          "derive from props where you can",
+          "a stored copy goes stale",
+          "an effect that syncs two states is a smell",
+          "one place owns each fact"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your application must show a large table that is filterable and sortable without becoming sluggish. How would you build it?",
+        "expectedPoints": [
+          "virtualise the rows",
+          "memoise expensive derivations",
+          "keep filtering off the render path",
+          "measure with realistic row counts"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how you would structure state for a multi-step form where later steps depend on earlier answers and the user can go back.",
+        "expectedPoints": [
+          "one state object versus state per step",
+          "validation per step and again at submit",
+          "preserve entries when navigating backwards",
+          "avoid losing data when a step unmounts"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A colleague proposes putting all application state into one context. What would you raise?",
+        "expectedPoints": [
+          "every consumer re-renders on any change",
+          "split contexts by how often they change",
+          "selectors or an external store",
+          "measure before restructuring"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you make a component that fetches data testable without a real network?",
+        "expectedPoints": [
+          "inject the fetching dependency",
+          "test the states: loading, success, error",
+          "avoid asserting on implementation details",
+          "keep it deterministic and fast"
+        ]
+      }
+    ],
+    "Node.js": [
+      {
+        "difficulty": "EASY",
+        "text": "Your server handles requests fine on its own but slows badly under load, and one CPU core sits at 100%. What is happening?",
+        "expectedPoints": [
+          "a single-threaded event loop",
+          "synchronous work blocks every request",
+          "move the heavy work off the loop",
+          "cluster or worker threads for parallelism"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You read a large file into memory to send it to the client and the process runs out of memory. What would you change?",
+        "expectedPoints": [
+          "stream rather than buffer the whole file",
+          "constant memory regardless of file size",
+          "backpressure when the client is slow",
+          "pipe it to the response"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "An unhandled promise rejection takes down your process in production. How should errors in async code be handled?",
+        "expectedPoints": [
+          "await inside try/catch",
+          "catch at a well-defined boundary",
+          "do not swallow errors silently",
+          "fail the request, not the whole process"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "How would you keep secrets such as a database password out of your codebase?",
+        "expectedPoints": [
+          "environment variables or a secret store",
+          "never committed to version control",
+          "different values per environment",
+          "rotate without needing a code change"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Requests to your API occasionally hang forever. Where would you look, and what would you add?",
+        "expectedPoints": [
+          "an outbound call with no timeout",
+          "connection pool exhaustion",
+          "timeouts at every boundary",
+          "bounded retries, or a circuit breaker"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain the difference between process.nextTick, setImmediate and a zero-delay timer, and when the distinction actually matters.",
+        "expectedPoints": [
+          "nextTick runs before the loop continues",
+          "setImmediate runs on the check phase",
+          "starvation risk if nextTick keeps queueing",
+          "rarely matters, but matters under load"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your service must call three downstream APIs. One is slow and its result is optional. How would you structure that?",
+        "expectedPoints": [
+          "concurrent where the calls are independent",
+          "a timeout on the optional one",
+          "degrade rather than fail the whole request",
+          "total latency stays bounded"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "How would you deploy a new version without losing requests that are already in flight?",
+        "expectedPoints": [
+          "stop accepting new connections first",
+          "drain the existing ones",
+          "handle the shutdown signal",
+          "readiness check reflects the real state"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your process memory grows steadily over days. How do you find the cause?",
+        "expectedPoints": [
+          "heap snapshots taken over time",
+          "retained objects: caches, listeners, closures",
+          "unbounded growth in a map or array",
+          "reproduce it under load"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Design how a job that must run exactly once would work across three instances of your service.",
+        "expectedPoints": [
+          "a lock, or leader election",
+          "idempotency so a repeat is harmless",
+          "visibility when it fails",
+          "what happens if the holder dies mid-job"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A downstream service starts failing and your service becomes unresponsive too. How would you stop that spreading?",
+        "expectedPoints": [
+          "timeouts and bounded retries",
+          "a circuit breaker",
+          "isolate the resource pool",
+          "shed load rather than queue forever"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you approach logging in a service so it is useful during an incident but not overwhelming?",
+        "expectedPoints": [
+          "structured rather than free text",
+          "a correlation id across one request",
+          "levels used meaningfully",
+          "no secrets or personal data in logs"
+        ]
+      }
+    ],
+    "C++": [
+      {
+        "difficulty": "EASY",
+        "text": "A function returns a pointer to a local variable and the caller sometimes reads rubbish. Explain what is wrong and how you would fix it.",
+        "expectedPoints": [
+          "the local goes out of scope when the function returns",
+          "a dangling pointer, undefined behaviour",
+          "return by value, or allocate with clear ownership",
+          "prefer a smart pointer or a container"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You see a class that allocates memory in its constructor and frees it in its destructor, but copying an object of it crashes the program. What is happening?",
+        "expectedPoints": [
+          "the default copy copies the pointer, not the memory",
+          "two objects free the same block",
+          "define copy and assignment, or delete them",
+          "the rule of three or five"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "When would you pass an argument by const reference rather than by value?",
+        "expectedPoints": [
+          "avoid copying a large object",
+          "const signals it will not be modified",
+          "by value is fine for small cheap types",
+          "beware of dangling if it is stored"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A loop over a vector removes elements while iterating and behaves strangely. What is the problem?",
+        "expectedPoints": [
+          "iterators invalidated by modification",
+          "erase returns the next valid iterator",
+          "the remove-erase idiom",
+          "index-based iteration has the same trap"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain the difference between unique_ptr and shared_ptr, and how you would choose between them.",
+        "expectedPoints": [
+          "unique expresses single ownership",
+          "shared adds reference counting and cost",
+          "prefer unique unless sharing is genuine",
+          "shared can create reference cycles"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your program is correct but slower than expected when copying objects around. What language features would you reach for?",
+        "expectedPoints": [
+          "move semantics rather than copying",
+          "rvalue references",
+          "reserve capacity to avoid reallocation",
+          "measure rather than assume the copy is the cost"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "What does RAII mean, and how does it change the way you handle a file handle or a lock?",
+        "expectedPoints": [
+          "acquisition tied to object lifetime",
+          "release happens in the destructor",
+          "exception safety comes for free",
+          "no manual cleanup path to forget"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Two threads increment the same integer and the total comes out wrong. Explain why and what you would change.",
+        "expectedPoints": [
+          "increment is not atomic",
+          "a data race is undefined behaviour",
+          "atomic type or a mutex",
+          "consider whether sharing is needed at all"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe a situation where undefined behaviour makes a program work in debug and fail in release, and how you would find it.",
+        "expectedPoints": [
+          "the optimiser may assume UB does not happen",
+          "uninitialised reads, out-of-bounds, signed overflow",
+          "sanitisers to detect it",
+          "do not rely on observed behaviour"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You need a container that is fast to look up and keeps insertion order. How would you design or compose it?",
+        "expectedPoints": [
+          "hash map plus a list",
+          "iterator or index stability",
+          "cost of each operation stated",
+          "measure against the real access pattern"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain what a virtual destructor is for, with a case where omitting it causes a real bug.",
+        "expectedPoints": [
+          "deleting through a base pointer",
+          "derived destructor never runs",
+          "resources leaked",
+          "make it virtual or forbid the polymorphic delete"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you approach reducing build times in a large C++ codebase?",
+        "expectedPoints": [
+          "reduce header dependencies",
+          "forward declarations, the pimpl idiom",
+          "precompiled headers or modules",
+          "measure which headers cost most"
+        ]
+      }
+    ],
+    "Machine Learning": [
+      {
+        "difficulty": "EASY",
+        "text": "Your model scores 99% accuracy on a dataset where 99% of examples are one class. What would you say about it?",
+        "expectedPoints": [
+          "accuracy is misleading when classes are imbalanced",
+          "precision, recall, F1 instead",
+          "a baseline that predicts the majority",
+          "what error actually costs here"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A model performs well in training and badly on new data. Explain what is happening and what you would try.",
+        "expectedPoints": [
+          "overfitting: memorising rather than generalising",
+          "more data, or regularisation",
+          "simpler model",
+          "validate on data it has never seen"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Why split data into training, validation and test sets rather than just two?",
+        "expectedPoints": [
+          "validation guides choices, test measures honestly",
+          "tuning against test leaks information",
+          "the test set is used once",
+          "otherwise the reported score is optimistic"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You are given a dataset with missing values in an important column. What are your options?",
+        "expectedPoints": [
+          "understand why it is missing",
+          "drop, impute, or model missingness",
+          "missing may itself be informative",
+          "the choice must not leak the target"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain data leakage with a concrete example, and how you would catch it.",
+        "expectedPoints": [
+          "information from the future or the target reaching features",
+          "scaling fitted before the split",
+          "suspiciously high scores",
+          "build the pipeline so it cannot happen"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A stakeholder asks why your model rejected a particular application. How would you answer?",
+        "expectedPoints": [
+          "feature attribution for that case",
+          "a globally interpretable model where it matters",
+          "the limits of a post-hoc explanation",
+          "record what was used to decide"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your model works well at launch and degrades over months. What is happening and what would you put in place?",
+        "expectedPoints": [
+          "data or concept drift",
+          "monitor input distributions and outcomes",
+          "retraining cadence",
+          "alert on the metric, not just on errors"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "How would you decide between a simple model you understand and a complex one that scores slightly better?",
+        "expectedPoints": [
+          "cost of being wrong",
+          "explainability requirements",
+          "maintenance and inference cost",
+          "is the difference statistically meaningful"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how you would evaluate a model that will be used to rank candidates, given fairness concerns.",
+        "expectedPoints": [
+          "measure performance across groups, not just overall",
+          "the metric encodes a definition of fairness",
+          "different definitions conflict",
+          "human decision remains, model is advisory"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your training pipeline gives different results on different runs. How would you make it reproducible, and when does that matter?",
+        "expectedPoints": [
+          "seed every source of randomness",
+          "pin data version and library versions",
+          "record the environment",
+          "matters for debugging and for audit"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "You must deploy a model where inference has to be fast and cheap. What levers do you have?",
+        "expectedPoints": [
+          "smaller architecture, distillation",
+          "quantisation, pruning",
+          "batching, caching common inputs",
+          "measure latency at a realistic percentile"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain the bias-variance trade-off using a decision you would actually make while building a model.",
+        "expectedPoints": [
+          "underfitting versus overfitting",
+          "model capacity and regularisation",
+          "more data affects variance more than bias",
+          "connect it to a concrete choice"
+        ]
+      }
+    ],
+    "Operating Systems": [
+      {
+        "difficulty": "EASY",
+        "text": "Explain the difference between a process and a thread, using a case where you would choose one over the other.",
+        "expectedPoints": [
+          "separate address space versus shared",
+          "isolation and crash containment",
+          "cost of creation and switching",
+          "communication cost differs"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your program is slow and top shows it waiting rather than using CPU. What does that suggest and what would you check?",
+        "expectedPoints": [
+          "I/O bound rather than CPU bound",
+          "disk, network or lock waits",
+          "different fixes than for CPU work",
+          "measure where the wait is"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "What is virtual memory, and why can a program appear to use more memory than the machine has?",
+        "expectedPoints": [
+          "address space is not physical memory",
+          "paging to disk",
+          "lazy allocation",
+          "thrashing when it goes too far"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Two programs write to the same file at the same time and it ends up corrupted. Explain why and what would prevent it.",
+        "expectedPoints": [
+          "interleaved writes with no coordination",
+          "file locking",
+          "write to a temp file and rename atomically",
+          "single writer if possible"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Describe a deadlock with a concrete example, and the conditions that must all hold for one to occur.",
+        "expectedPoints": [
+          "mutual exclusion, hold and wait, no preemption, circular wait",
+          "a concrete two-lock example",
+          "consistent lock ordering",
+          "timeouts as a mitigation"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain what a context switch costs, and why too many threads can make a program slower.",
+        "expectedPoints": [
+          "saving and restoring state",
+          "cache and TLB effects",
+          "scheduler overhead",
+          "more threads is not more throughput"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "What happens, step by step, when your program calls read on a file?",
+        "expectedPoints": [
+          "system call, user to kernel transition",
+          "page cache lookup",
+          "block until data is available",
+          "copy into user space"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your service is killed unexpectedly and the log shows nothing. What would you suspect?",
+        "expectedPoints": [
+          "the out-of-memory killer",
+          "check system logs, not just application logs",
+          "resource limits",
+          "memory growth over time"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain how a mutex differs from a semaphore and from a spinlock, and when a spinlock is the right choice.",
+        "expectedPoints": [
+          "ownership versus counting",
+          "spinlock burns CPU while waiting",
+          "appropriate for very short critical sections",
+          "never spin where you might sleep"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how copy-on-write works and a case where it makes a large operation cheap.",
+        "expectedPoints": [
+          "pages shared until written",
+          "fork does not copy everything",
+          "cost deferred to first write",
+          "memory accounting becomes confusing"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your multi-threaded program is correct but does not get faster with more cores. What would you investigate?",
+        "expectedPoints": [
+          "lock contention",
+          "false sharing on a cache line",
+          "a serial section bounding the speedup",
+          "measure before restructuring"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you diagnose a process that is using far more file descriptors than expected?",
+        "expectedPoints": [
+          "list open descriptors",
+          "connections or files never closed",
+          "a leak in an error path",
+          "raise the limit only after understanding why"
+        ]
+      }
+    ],
+    "System Design": [
+      {
+        "difficulty": "EASY",
+        "text": "A single server runs your web application and it is starting to struggle. What would you look at before buying a bigger machine?",
+        "expectedPoints": [
+          "measure where the time actually goes",
+          "database queries versus application work",
+          "caching what is repeated",
+          "bigger machine buys time, not a fix"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Explain what a load balancer does and one problem it introduces.",
+        "expectedPoints": [
+          "spreads traffic across instances",
+          "health checks remove bad instances",
+          "session affinity if state is local",
+          "it becomes a single point to think about"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Why would you put a cache in front of a database, and what is the cost?",
+        "expectedPoints": [
+          "reduce repeated reads",
+          "staleness",
+          "invalidation strategy",
+          "a cold cache after restart"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your service sends an email when an order is placed, and the email provider is slow. How would you stop that slowing the order?",
+        "expectedPoints": [
+          "do it asynchronously",
+          "a queue between the two",
+          "the order succeeds even if email fails",
+          "retry the email independently"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Design a URL shortener. Walk me through the parts and the decisions you would have to make.",
+        "expectedPoints": [
+          "id generation and collision handling",
+          "read-heavy: cache aggressively",
+          "storage estimate",
+          "custom aliases and expiry"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain the difference between vertical and horizontal scaling, and what horizontal scaling forces you to change.",
+        "expectedPoints": [
+          "bigger machine versus more machines",
+          "state must leave the instance",
+          "sessions, files, caches",
+          "coordination and consistency appear"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "How would you design a system so that a failed payment is never charged twice?",
+        "expectedPoints": [
+          "idempotency key from the client",
+          "record the attempt before calling out",
+          "safe retry semantics",
+          "reconciliation for the uncertain cases"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your API needs rate limiting. How would you design it and what would you consider?",
+        "expectedPoints": [
+          "per key or per user, not just per IP",
+          "a window algorithm and its edge cases",
+          "shared state across instances",
+          "what the client sees when limited"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Design a notification system that must deliver to millions of users without falling over. Where are the hard parts?",
+        "expectedPoints": [
+          "fan-out cost",
+          "queueing and backpressure",
+          "per-user preferences and deduplication",
+          "failure and retry without duplicates"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain the CAP theorem using a decision you would actually have to make, not the abstract statement.",
+        "expectedPoints": [
+          "a partition forces a choice",
+          "availability versus consistency for this data",
+          "different choices for different data",
+          "most systems are mixed"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you migrate a large table to a new schema with no downtime?",
+        "expectedPoints": [
+          "write to both, read from one",
+          "backfill in batches",
+          "switch reads, then stop writing the old",
+          "a rollback path at every stage"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Two services need to stay consistent but cannot share a database. How would you approach it?",
+        "expectedPoints": [
+          "eventual consistency and what it costs",
+          "events or an outbox pattern",
+          "idempotent consumers",
+          "reconciliation when they diverge"
+        ]
+      }
+    ],
+    "Cybersecurity": [
+      {
+        "difficulty": "EASY",
+        "text": "A login form builds its query by joining strings with the submitted username. What is the risk and what is the fix?",
+        "expectedPoints": [
+          "SQL injection",
+          "parameterised queries",
+          "escaping is not the primary answer",
+          "least privilege on the database account"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your site displays a comment exactly as the user typed it. What could go wrong?",
+        "expectedPoints": [
+          "cross-site scripting",
+          "escape on output, contextually",
+          "a content security policy as defence in depth",
+          "do not trust stored data either"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Why should passwords be hashed with something like bcrypt rather than SHA-256?",
+        "expectedPoints": [
+          "deliberately slow, with a work factor",
+          "per-password salt",
+          "resists offline brute force",
+          "fast hashes are the wrong tool here"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "A colleague suggests hiding an admin page by not linking to it. What would you say?",
+        "expectedPoints": [
+          "obscurity is not access control",
+          "authorise on the server for every request",
+          "the URL will be found",
+          "test as an unauthorised user"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain CSRF with an example, and how you would defend against it.",
+        "expectedPoints": [
+          "the browser sends cookies automatically",
+          "a state-changing request from another origin",
+          "anti-CSRF token, or SameSite cookies",
+          "safe methods must stay safe"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your API returns 'user not found' for an unknown email and 'wrong password' otherwise. What is wrong with that?",
+        "expectedPoints": [
+          "account enumeration",
+          "identical response either way",
+          "the same for timing as well as wording",
+          "applies to reset flows too"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "How would you store and handle an API key that your service needs to call a third party?",
+        "expectedPoints": [
+          "never in source control",
+          "environment or a secret manager",
+          "rotate without redeploying code",
+          "never log it, redact in errors"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "What is the principle of least privilege, and how would you apply it to a service that reads from one database table?",
+        "expectedPoints": [
+          "grant only what is needed",
+          "a dedicated account, read-only",
+          "limits the blast radius of compromise",
+          "review as requirements change"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how you would approach threat modelling for a feature that uploads files.",
+        "expectedPoints": [
+          "what an attacker would want",
+          "type and size validation, but not by extension alone",
+          "storage outside the web root, no execution",
+          "malware scanning and quarantine"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A dependency you use has a published vulnerability. Walk me through your response.",
+        "expectedPoints": [
+          "determine whether you use the affected path",
+          "assess exploitability in your context",
+          "patch or mitigate, then verify",
+          "how you would have found out sooner"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain what a timing attack is and how it could apply to comparing a token.",
+        "expectedPoints": [
+          "comparison time leaks information",
+          "constant-time comparison",
+          "applies to secrets, not to public data",
+          "measurement noise does not make it safe"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you design session handling so that stealing a session is both hard and short-lived?",
+        "expectedPoints": [
+          "httpOnly, Secure, SameSite",
+          "rotation on privilege change",
+          "expiry and idle timeout",
+          "server-side revocation"
+        ]
+      }
+    ],
+    "Computer Networks": [
+      {
+        "difficulty": "EASY",
+        "text": "A user says your site is slow but the server reports fast responses. Where else could the time be going?",
+        "expectedPoints": [
+          "DNS, connection setup, TLS handshake",
+          "distance and round trips",
+          "payload size and compression",
+          "measure from the client side"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Explain the difference between TCP and UDP, with a case for each.",
+        "expectedPoints": [
+          "ordering and retransmission versus neither",
+          "handshake and overhead",
+          "video or games versus file transfer",
+          "reliability can be built on UDP if needed"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "What actually happens between typing a URL and the page appearing?",
+        "expectedPoints": [
+          "DNS resolution",
+          "TCP connection and TLS",
+          "request and response",
+          "rendering and subresources"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your API works from your machine but not from a colleague's browser, with a CORS error. What is going on?",
+        "expectedPoints": [
+          "a browser-enforced cross-origin rule",
+          "the server must send the headers",
+          "preflight for some requests",
+          "it is not a server-to-server restriction"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Explain what a TLS handshake accomplishes, in terms of what an attacker can and cannot do afterwards.",
+        "expectedPoints": [
+          "identity via certificate",
+          "key agreement",
+          "confidentiality and integrity after",
+          "it does not authenticate the client by default"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your service makes many small HTTPS calls to the same host and is slow. What would you change?",
+        "expectedPoints": [
+          "connection reuse, keep-alive",
+          "avoid a handshake per call",
+          "connection pooling",
+          "batching where possible"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "What is the difference between latency and bandwidth, and which one would you attack for a chatty protocol?",
+        "expectedPoints": [
+          "round-trip time versus throughput",
+          "chatty protocols are latency bound",
+          "fewer round trips, not a bigger pipe",
+          "measure to know which binds"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A request works over HTTP but fails over HTTPS behind a proxy. What would you check?",
+        "expectedPoints": [
+          "forwarded headers and scheme",
+          "redirect loops from a wrong scheme",
+          "certificate chain and hostname",
+          "timeouts at the proxy"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Explain head-of-line blocking and how HTTP/2 and HTTP/3 relate to it.",
+        "expectedPoints": [
+          "a stalled response blocks others",
+          "multiplexing at the HTTP layer",
+          "TCP still blocks at its own layer",
+          "QUIC moves it to per-stream"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you diagnose intermittent packet loss affecting only some users?",
+        "expectedPoints": [
+          "path matters, not just endpoints",
+          "traceroute and per-hop loss",
+          "correlate by network or geography",
+          "distinguish loss from congestion"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how you would design an API for clients on unreliable mobile networks.",
+        "expectedPoints": [
+          "idempotent, retryable requests",
+          "small payloads and compression",
+          "resumable operations",
+          "clear timeout and offline behaviour"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "What is a race condition between DNS caching and a deployment, and how would you avoid it?",
+        "expectedPoints": [
+          "stale records after a change",
+          "TTL and its trade-off",
+          "lower TTL before a planned change",
+          "do not rely on DNS for fast failover"
+        ]
+      }
+    ],
+    "DevOps": [
+      {
+        "difficulty": "EASY",
+        "text": "A deployment worked on staging and failed in production. What differences would you check first?",
+        "expectedPoints": [
+          "configuration and secrets",
+          "data volume and shape",
+          "versions of dependencies or runtime",
+          "make environments as alike as practical"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Why keep infrastructure definitions in version control rather than configuring by hand?",
+        "expectedPoints": [
+          "reviewable and reversible",
+          "reproducible environments",
+          "a record of what changed and why",
+          "drift becomes visible"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your build passes locally and fails in CI. What are the usual causes?",
+        "expectedPoints": [
+          "uncommitted files",
+          "environment or version differences",
+          "test ordering or shared state",
+          "time zone and locale"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "What would you put in a health check endpoint, and what would you deliberately leave out?",
+        "expectedPoints": [
+          "can this instance serve traffic",
+          "separate liveness from readiness",
+          "avoid checking every dependency",
+          "keep it cheap and fast"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Describe a deployment strategy that lets you roll back quickly, and what it costs.",
+        "expectedPoints": [
+          "blue-green or canary",
+          "old version stays available",
+          "database changes are the hard part",
+          "extra capacity or complexity"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your pipeline takes 40 minutes and people have stopped waiting for it. How would you approach that?",
+        "expectedPoints": [
+          "measure which stages cost most",
+          "parallelise independent work",
+          "cache dependencies",
+          "fail fast on cheap checks"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "How would you handle a database migration as part of a deployment that must not break the running version?",
+        "expectedPoints": [
+          "backwards-compatible change first",
+          "deploy code that tolerates both",
+          "clean up in a later release",
+          "never a destructive change in one step"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "What is the difference between logs, metrics and traces, and what would you reach for during an outage?",
+        "expectedPoints": [
+          "metrics tell you something is wrong",
+          "traces show where",
+          "logs show why",
+          "each has a different cost profile"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Design how secrets reach a running container without ever being in the image or the repository.",
+        "expectedPoints": [
+          "injected at runtime",
+          "a secret manager with access control",
+          "rotation without rebuilding",
+          "not visible in process listings or logs"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your service autoscales but still falls over during traffic spikes. What could be wrong?",
+        "expectedPoints": [
+          "scaling reacts too slowly",
+          "a downstream bottleneck that does not scale",
+          "cold start cost",
+          "load shedding as a floor"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you set up alerting so that people trust it and act on it?",
+        "expectedPoints": [
+          "alert on symptoms users feel",
+          "actionable, with a runbook",
+          "avoid alerting on every anomaly",
+          "review and delete noisy alerts"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "A container works locally and is killed repeatedly in the cluster. How would you investigate?",
+        "expectedPoints": [
+          "memory limits and the OOM killer",
+          "readiness and liveness probe settings",
+          "exit codes and events",
+          "resource requests versus real usage"
+        ]
+      }
+    ],
+    "Mobile Development": [
+      {
+        "difficulty": "EASY",
+        "text": "Your app feels sluggish when scrolling a list of images. What would you look at?",
+        "expectedPoints": [
+          "work happening on the main thread",
+          "image decoding and sizing",
+          "view recycling",
+          "load off-screen work lazily"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "The app crashes when the user rotates the screen mid-task. What is likely happening?",
+        "expectedPoints": [
+          "state lost on recreation",
+          "save and restore state properly",
+          "long work tied to the screen lifecycle",
+          "test the rotation path"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "How would you handle a screen that needs data from the network when the user may be offline?",
+        "expectedPoints": [
+          "show cached data if available",
+          "an explicit offline state, not a spinner forever",
+          "retry when connectivity returns",
+          "never lose the user's input"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Why should you not do network calls on the main thread in a mobile app?",
+        "expectedPoints": [
+          "the interface freezes",
+          "the system may kill the app",
+          "background thread and callback",
+          "unpredictable duration"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Your app's battery usage is being criticised. What are the usual culprits?",
+        "expectedPoints": [
+          "wake locks and frequent polling",
+          "location updates at high accuracy",
+          "background work not batched",
+          "measure before guessing"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "How would you store a user's authentication token on a device?",
+        "expectedPoints": [
+          "platform secure storage, not plain preferences",
+          "encrypted at rest",
+          "short-lived with refresh",
+          "cleared on logout"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Describe how you would support two very different screen sizes without duplicating the whole interface.",
+        "expectedPoints": [
+          "responsive layout rather than fixed",
+          "shared logic, different presentation",
+          "test on both",
+          "avoid hard-coded dimensions"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A user reports a bug you cannot reproduce on your device. How would you approach it?",
+        "expectedPoints": [
+          "device, OS version, locale differences",
+          "crash reporting with context",
+          "logging that reaches you",
+          "narrow by what is common to reporters"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you design syncing so a user can edit offline and not lose work when they reconnect?",
+        "expectedPoints": [
+          "local writes queued",
+          "conflict detection and a resolution rule",
+          "idempotent sync operations",
+          "surface conflicts rather than silently losing"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Your app must handle being killed by the system at any moment. What does that change about how you write it?",
+        "expectedPoints": [
+          "persist state at the right moments",
+          "resume rather than restart",
+          "no assumption of a long-lived process",
+          "background work that survives"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How would you reduce app startup time?",
+        "expectedPoints": [
+          "measure cold versus warm start",
+          "defer non-essential initialisation",
+          "lazy loading",
+          "reduce work before first frame"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe how you would roll out a risky change to only some users.",
+        "expectedPoints": [
+          "feature flag or staged rollout",
+          "monitor before widening",
+          "a kill switch that does not need a release",
+          "app store review latency matters"
+        ]
+      }
+    ]
+  },
+  "HR_GENERAL": {
+    "_default": [
+      {
+        "difficulty": "EASY",
+        "text": "Tell me about a time you had to learn something completely new to finish a task. How did you go about it?",
+        "expectedPoints": [
+          "specific concrete example",
+          "how they found resources",
+          "how they applied it",
+          "what the outcome was"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You are given a task and realise the instructions are unclear. What do you do?",
+        "expectedPoints": [
+          "ask clarifying questions early",
+          "do not guess silently",
+          "confirm understanding before building",
+          "propose an interpretation to check"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "Your manager gives you feedback you were not expecting and do not immediately agree with. How do you respond?",
+        "expectedPoints": [
+          "listen without becoming defensive",
+          "ask for specific examples",
+          "take time to reflect before reacting",
+          "act on what is valid",
+          "follow up later to show the change"
+        ]
+      },
+      {
+        "difficulty": "EASY",
+        "text": "You finish your assigned work early and nobody has given you anything else. What do you do?",
+        "expectedPoints": [
+          "proactively ask what is needed next",
+          "offer help to teammates who are behind",
+          "improve tests, documentation or tooling",
+          "pick something up from the backlog",
+          "do not simply stay idle and silent"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You disagree with how a teammate wants to solve a problem, and they are more senior than you. How do you handle it?",
+        "expectedPoints": [
+          "raise it respectfully with reasoning",
+          "focus on the problem not the person",
+          "listen to their reasoning too",
+          "commit and support once decided",
+          "use evidence where possible"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You have three tasks all due the same day and cannot finish them all. What do you do?",
+        "expectedPoints": [
+          "assess impact and dependencies",
+          "communicate early rather than miss silently",
+          "ask stakeholders to prioritise",
+          "propose a realistic plan"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "A teammate is not delivering their part and it is putting the team's deadline at risk. What do you do?",
+        "expectedPoints": [
+          "speak to them directly and privately first",
+          "understand what is blocking them",
+          "offer help before escalating",
+          "escalate with facts if it continues",
+          "focus on delivery rather than blame"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "You are asked to work on something you believe is the wrong priority. How do you handle it?",
+        "expectedPoints": [
+          "raise the concern with clear reasoning",
+          "ask for the context you may be missing",
+          "accept the decision once made",
+          "document the trade-off",
+          "commit fully rather than half-heartedly"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe a time you made a mistake that affected others. What happened and what did you do?",
+        "expectedPoints": [
+          "takes genuine ownership",
+          "no blame shifting",
+          "how it was fixed",
+          "how they communicated it",
+          "what changed afterwards"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Describe a time you had to give someone difficult feedback. How did you approach it, and what happened?",
+        "expectedPoints": [
+          "private and reasonably soon after",
+          "specific behaviour rather than personality",
+          "concrete examples rather than generalisations",
+          "listened to their perspective",
+          "agreed a concrete next step",
+          "followed up afterwards"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Tell me about a time you disagreed with a decision your team made. What did you do?",
+        "expectedPoints": [
+          "disagreed without undermining",
+          "made the case with reasons",
+          "committed once decided",
+          "what they would do differently"
+        ]
+      },
+      {
+        "difficulty": "MEDIUM",
+        "text": "Describe a piece of feedback that was hard to hear. How did you respond to it?",
+        "expectedPoints": [
+          "specific rather than generic",
+          "what changed afterwards",
+          "no defensiveness in the retelling",
+          "evidence of reflection"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "Tell me about something you got wrong that affected other people. How did you handle it?",
+        "expectedPoints": [
+          "owns it without excessive self-blame",
+          "what was done to put it right",
+          "what was changed to prevent a repeat",
+          "honesty about the impact"
+        ]
+      },
+      {
+        "difficulty": "HARD",
+        "text": "How do you decide what to work on when everything is described as urgent?",
+        "expectedPoints": [
+          "a basis for prioritising, not just effort",
+          "makes the trade-off visible to others",
+          "says no or renegotiates",
+          "revisits as things change"
+        ]
+      }
+    ]
+  }
+}

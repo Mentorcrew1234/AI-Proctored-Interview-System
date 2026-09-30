@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Interviews')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('interviews')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Interviews')}"></div>
+
+    <!--
+      One page for both roles. The admin and recruiter routes render this same
+      template through InterviewManagementController.renderManagement; the only
+      difference between them is the authorization scope, and that is decided
+      server-side from the principal, never from anything on this page.
+
+      Reading order is deliberate: counts, then what needs attention, then the
+      tab you are on, then the tools, then the rows. Everything optional -
+      filters, bulk edit - is collapsed until asked for, so the table is on
+      screen without scrolling.
+    -->
+    <main class="page"
+          th:with="listBase=@{${basePath}(tab=${activeTab.name()},search=${filter.search},fromDate=${filter.fromDate},toDate=${filter.toDate},status=${filter.status},domain=${filter.domain},experienceType=${filter.experienceType},interviewType=${filter.interviewType},language=${filter.language},recruiterId=${filter.recruiterId},sortBy=${filter.sortBy},sortDirection=${filter.sortDirection},size=${result.size()})},
+                    exportHref=@{${basePath} + '/export.xlsx'(tab=${activeTab.name()},search=${filter.search},fromDate=${filter.fromDate},toDate=${filter.toDate},status=${filter.status},domain=${filter.domain},experienceType=${filter.experienceType},interviewType=${filter.interviewType},language=${filter.language},recruiterId=${filter.recruiterId},sortBy=${filter.sortBy},sortDirection=${filter.sortDirection})}">
+
+        <div class="page-head">
+            <div>
+                <h1>Interviews</h1>
+                <p class="subtitle">
+                    Search, filter and manage scheduled interviews. Editing and deleting apply
+                    only while an interview is still scheduled &mdash; once a candidate has
+                    started, its questions already exist.
+                </p>
+            </div>
+            <div class="page-actions">
+                <a class="btn btn-secondary" th:href="@{/scheduling/bulk}">Bulk schedule</a>
+                <a sec:authorize="hasRole('ADMIN')" class="btn btn-secondary"
+                   th:href="@{/admin/interviews/new-multi}">Several candidates</a>
+                <a sec:authorize="hasRole('RECRUITER')" class="btn btn-secondary"
+                   th:href="@{/recruiter/interviews/new-multi}">Several candidates</a>
+                <a sec:authorize="hasRole('ADMIN')" class="btn"
+                   th:href="@{/admin/interviews/new}">Schedule interview</a>
+                <a sec:authorize="hasRole('RECRUITER')" class="btn"
+                   th:href="@{/recruiter/interviews/new}">Schedule interview</a>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <!-- ---- counts, each a shortcut into the matching tab --------------- -->
+        <div class="stats">
+            <a class="stat" th:href="@{${basePath}(tab='ALL')}"
+               th:attr="aria-current=${activeTab.name() == 'ALL'} ? 'true' : null">
+                <div class="stat-label">Total</div>
+                <div class="stat-value" th:text="${insights.total()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${basePath}(tab='TODAY')}"
+               th:attr="aria-current=${activeTab.name() == 'TODAY'} ? 'true' : null">
+                <div class="stat-label">Today</div>
+                <div class="stat-value is-primary" th:text="${insights.today()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${basePath}(tab='UPCOMING')}"
+               th:attr="aria-current=${activeTab.name() == 'UPCOMING'} ? 'true' : null">
+                <div class="stat-label">Upcoming</div>
+                <div class="stat-value" th:text="${insights.upcoming()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${basePath}(tab='IN_PROGRESS')}"
+               th:attr="aria-current=${activeTab.name() == 'IN_PROGRESS'} ? 'true' : null">
+                <div class="stat-label">In progress</div>
+                <div class="stat-value is-warning" th:text="${insights.inProgress()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${basePath}(tab='COMPLETED')}"
+               th:attr="aria-current=${activeTab.name() == 'COMPLETED'} ? 'true' : null">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value is-success" th:text="${insights.completed()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${basePath}(tab='CANCELLED')}"
+               th:attr="aria-current=${activeTab.name() == 'CANCELLED'} ? 'true' : null">
+                <div class="stat-label">Cancelled</div>
+                <div class="stat-value" th:text="${insights.cancelled()}">0</div>
+            </a>
+        </div>
+
+        <!-- ---- needs attention -------------------------------------------
+             Collapsed to one line when there is nothing to do about it. Every
+             item is derived from data already recorded: a "possible no show"
+             means the time passed and no session was ever started. -->
+        <div class="card" th:unless="${#lists.isEmpty(attention)}" style="padding:0">
+            <button type="button" class="tab" data-toggle="#attention-panel"
+                    style="width:100%;text-align:left;padding:12px 20px;border-bottom:none">
+                <span class="badge badge-warning" th:text="${#lists.size(attention)}">0</span>
+                &nbsp;interview(s) need attention
+            </button>
+            <div id="attention-panel" hidden style="border-top:1px solid var(--border)">
+                <div class="table-wrap">
+                    <table>
+                        <caption class="visually-hidden">Interviews needing attention</caption>
+                        <thead>
+                        <tr>
+                            <th scope="col">Reason</th>
+                            <th scope="col">Interview</th>
+                            <th scope="col">Why</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="item : ${attention}">
+                            <td><span class="badge badge-warning" th:text="${item.reason()}">Reason</span></td>
+                            <td>
+                                <a class="cell-title" th:href="@{'/interviews/' + ${item.interviewId()}}"
+                                   th:text="${item.displayName()}">Interview</a>
+                                <span class="cell-sub" th:text="${item.candidateName()}">candidate</span>
+                            </td>
+                            <td class="hint" th:text="${item.detail()}">detail</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---- tabs: the same data, filtered ------------------------------ -->
+        <nav class="tabs" aria-label="Interview status">
+            <a th:each="t : ${tabs}" class="tab" th:href="@{${basePath}(tab=${t.name()})}"
+               th:attr="aria-current=${activeTab.name() == t.name()} ? 'page' : null"
+               th:text="${t.label()}">Tab</a>
+        </nav>
+
+        <!-- ---- search, filters and export --------------------------------
+             One GET form: the search box, the filter panel and the page size
+             all submit together, so applying a filter never quietly discards
+             what was typed in search. -->
+        <form method="get" th:action="@{${basePath}}" th:object="${filter}">
+            <!-- The tab is a hidden field so searching stays on the tab you are
+                 looking at. Sort lives in the filter panel below - a hidden copy
+                 here would submit twice and win, silently ignoring the panel. -->
+            <input type="hidden" name="tab" th:value="${activeTab.name()}">
+
+            <div class="toolbar">
+                <div class="toolbar-search">
+                    <label class="visually-hidden" for="search">Search interviews</label>
+                    <input type="search" id="search" name="search" th:value="*{search}"
+                           placeholder="Search interview name, candidate name or email...">
+                    <button type="submit" class="btn-secondary">Search</button>
+                </div>
+
+                <button type="button" class="btn btn-secondary" data-toggle="#filter-panel">
+                    Filters
+                    <span class="badge" th:if="${filter.hasAdvancedFilters()}">on</span>
+                </button>
+
+                <a class="btn btn-secondary" th:if="${result.totalElements() > 0}"
+                   th:href="${result.totalElements() <= exportSoftLimit}
+                            ? ${exportHref} : ${exportHref} + '&confirmLarge=true'"
+                   th:attr="data-confirm=${result.totalElements() > exportSoftLimit}
+                            ? 'This exports every interview matching the current filters. It is a large export and may take a moment to build. Continue?' : null">
+                    Export <span th:text="${result.totalElements()}">0</span> to Excel
+                </a>
+
+                <span class="topbar-spacer"></span>
+
+                <label class="visually-hidden" for="size">Rows per page</label>
+                <select id="size" name="size" style="width:auto" data-autosubmit>
+                    <option th:each="ps : ${pageSizes}" th:value="${ps}"
+                            th:text="${ps} + ' per page'"
+                            th:selected="${filter.size == ps}">20</option>
+                </select>
+            </div>
+
+            <!-- Open on arrival when a filter is already applied, so nothing is
+                 silently narrowing the results out of sight. -->
+            <div class="filters-body" id="filter-panel" style="border-radius:var(--radius)"
+                 th:attr="hidden=${filter.hasAdvancedFilters()} ? null : 'hidden'">
+                <div class="filter-grid">
+                    <div class="field">
+                        <label for="fromDate">Scheduled from</label>
+                        <input type="date" id="fromDate" name="fromDate" th:value="*{fromDate}">
+                    </div>
+                    <div class="field">
+                        <label for="toDate">Scheduled until</label>
+                        <input type="date" id="toDate" name="toDate" th:value="*{toDate}">
+                    </div>
+                    <div class="field">
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="">Any status</option>
+                            <option th:each="s : ${statuses}" th:value="${s}"
+                                    th:text="${#strings.replace(s,'_',' ')}"
+                                    th:selected="${filter.status != null and filter.status.name() == s.name()}">S</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="domain">Domain</label>
+                        <select id="domain" name="domain">
+                            <option value="">Any domain</option>
+                            <option th:each="d : ${domains}" th:value="${d}" th:text="${d}"
+                                    th:selected="${filter.domain == d}">D</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="experienceType">Experience</label>
+                        <select id="experienceType" name="experienceType">
+                            <option value="">Any experience</option>
+                            <option th:each="e : ${experienceTypes}" th:value="${e}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(e))}"
+                                    th:selected="${filter.experienceType != null and filter.experienceType.name() == e.name()}">E</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="interviewType">Interview type</label>
+                        <select id="interviewType" name="interviewType">
+                            <option value="">Any type</option>
+                            <option th:each="t : ${interviewTypes}" th:value="${t}"
+                                    th:text="${#strings.replace(t,'_',' / ')}"
+                                    th:selected="${filter.interviewType != null and filter.interviewType.name() == t.name()}">T</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="language">Language</label>
+                        <select id="language" name="language">
+                            <option value="">Any language</option>
+                            <option th:each="l : ${languages}" th:value="${l}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(l))}"
+                                    th:selected="${filter.language != null and filter.language.name() == l.name()}">L</option>
+                        </select>
+                    </div>
+                    <!-- Only an admin can filter by recruiter; a recruiter is
+                         already scoped to their own interviews. -->
+                    <div class="field" th:if="${isAdmin}">
+                        <label for="recruiterId">Recruiter</label>
+                        <select id="recruiterId" name="recruiterId">
+                            <option value="">Any recruiter</option>
+                            <option th:each="r : ${recruiters}" th:value="${r.id()}"
+                                    th:text="${r.fullName()}"
+                                    th:selected="${filter.recruiterId == r.id()}">R</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="sortByVisible">Sort by</label>
+                        <select id="sortByVisible" name="sortBy">
+                            <option value="scheduledAt" th:selected="${filter.sortBy == 'scheduledAt'}">Scheduled date</option>
+                            <option value="interviewName" th:selected="${filter.sortBy == 'interviewName'}">Interview name</option>
+                            <option value="candidateName" th:selected="${filter.sortBy == 'candidateName'}">Candidate name</option>
+                            <option value="status" th:selected="${filter.sortBy == 'status'}">Status</option>
+                            <option value="createdAt" th:selected="${filter.sortBy == 'createdAt'}">Created date</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="sortDirectionVisible">Order</label>
+                        <select id="sortDirectionVisible" name="sortDirection">
+                            <option value="" th:selected="${filter.sortDirection == null or filter.sortDirection == ''}">Default</option>
+                            <option value="asc" th:selected="${filter.sortDirection == 'asc'}">Oldest first</option>
+                            <option value="desc" th:selected="${filter.sortDirection == 'desc'}">Newest first</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button type="submit">Apply filters</button>
+                    <a class="btn btn-ghost" th:href="@{${basePath}(tab=${activeTab.name()})}">Clear all</a>
+                </div>
+            </div>
+        </form>
+
+        <!-- ---- what is currently applied ---------------------------------- -->
+        <div class="chips" th:unless="${#lists.isEmpty(activeFilters)}" style="margin:12px 0">
+            <span class="hint" style="margin:0">Showing:</span>
+            <span class="chip" th:each="af : ${activeFilters}" th:text="${af.label()}">filter</span>
+            <a class="btn btn-ghost btn-sm" th:href="@{${basePath}}">Clear</a>
+        </div>
+
+        <!-- ---- results + bulk actions -------------------------------------
+             One form wraps the table, the selection bar and the bulk-edit
+             fields, so per-row checkboxes and "select all matching" feed the
+             same submission. The current filter is echoed as hidden fields
+             because "select all matching" is recomputed by the server from that
+             filter under the caller's own scope - the browser never sends an id
+             list for that mode, so there is nothing to tamper with. -->
+        <form id="bulkForm" method="post" th:action="@{${basePath} + '/bulk-delete'}"
+              data-selection th:attr="data-total-matching=${result.totalElements()}">
+            <input type="hidden" name="tab" th:value="${activeTab.name()}">
+            <input type="hidden" name="search" th:value="${filter.search}">
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate}">
+            <input type="hidden" name="status" th:value="${filter.status}">
+            <input type="hidden" name="domain" th:value="${filter.domain}">
+            <input type="hidden" name="experienceType" th:value="${filter.experienceType}">
+            <input type="hidden" name="language" th:value="${filter.language}">
+            <input type="hidden" name="interviewType" th:value="${filter.interviewType}">
+            <input type="hidden" name="recruiterId" th:value="${filter.recruiterId}">
+
+            <div class="card card-flush">
+
+                <!-- ---- empty state ---- -->
+                <div class="empty" th:if="${#lists.isEmpty(result.rows())}">
+                    <div class="empty-mark" aria-hidden="true">&#128269;</div>
+                    <div class="empty-title"
+                         th:text="${filter.hasActiveFilters()}
+                                  ? 'No interviews match these filters'
+                                  : 'No interviews yet'">No interviews</div>
+                    <p th:if="${filter.hasActiveFilters()}">
+                        Try a wider date range, a different status, or clear the filters to see
+                        everything you have access to.
+                    </p>
+                    <p th:unless="${filter.hasActiveFilters()}">
+                        Schedule one interview with the form, or create a whole drive at once
+                        from a spreadsheet.
+                    </p>
+                    <a class="btn btn-secondary" th:if="${filter.hasActiveFilters()}"
+                       th:href="@{${basePath}}">Clear filters</a>
+                    <a class="btn" th:unless="${filter.hasActiveFilters()}"
+                       sec:authorize="hasRole('RECRUITER')"
+                       th:href="@{/recruiter/interviews/new}">Schedule interview</a>
+                    <a class="btn" th:unless="${filter.hasActiveFilters()}"
+                       sec:authorize="hasRole('ADMIN')"
+                       th:href="@{/admin/interviews/new}">Schedule interview</a>
+                </div>
+
+                <!-- ---- the table ----
+                     Seven columns, not eleven. Experience, interview type,
+                     question count and the invite link live on the detail page,
+                     which is one click away and has room to label them. -->
+                <div class="table-wrap" th:unless="${#lists.isEmpty(result.rows())}">
+                    <table>
+                        <caption class="visually-hidden">Interviews matching the current filters</caption>
+                        <thead>
+                        <tr>
+                            <th scope="col" class="td-check">
+                                <input type="checkbox" data-select-page
+                                       title="Select every eligible interview on this page">
+                                <span class="visually-hidden">Select all on this page</span>
+                            </th>
+                            <th scope="col">Interview</th>
+                            <th scope="col">Candidate</th>
+                            <th scope="col">Scheduled</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" th:if="${isAdmin}">Recruiter</th>
+                            <th scope="col" class="td-actions">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="i : ${result.rows()}">
+                            <td class="td-check">
+                                <!-- Only a scheduled interview is eligible for a bulk action;
+                                     the server refuses anything else regardless. -->
+                                <input type="checkbox" class="row-select" name="ids" th:value="${i.id()}"
+                                       th:if="${i.status().name() == 'SCHEDULED'}"
+                                       th:attr="aria-label='Select ' + ${i.displayName()}">
+                                <span th:unless="${i.status().name() == 'SCHEDULED'}" class="hint"
+                                      title="Only a scheduled interview can be bulk-edited or deleted">&mdash;</span>
+                            </td>
+                            <td>
+                                <a class="cell-title" th:href="@{'/interviews/' + ${i.id()}}"
+                                   th:text="${i.displayName()}">Name</a>
+                                <span class="cell-sub">
+                                    <span th:text="${i.domain()}">Java</span>
+                                    &middot;
+                                    <span th:text="${i.interviewType().name() == 'TECHNICAL'} ? 'Technical' : 'HR / General'">Technical</span>
+                                    <!-- Older interviews predate naming; the id is shown instead. -->
+                                    <span th:if="${i.interviewName() == null}"> &middot; unnamed</span>
+                                </span>
+                            </td>
+                            <td>
+                                <span class="cell-title" th:text="${i.candidateName()}">Candidate</span>
+                                <span class="cell-sub" th:text="${i.candidateEmail()}">email</span>
+                            </td>
+                            <td class="nowrap" th:text="${i.scheduledAtText()}">date</td>
+                            <td>
+                                <span class="badge" th:classappend="'badge-' + ${#strings.toLowerCase(i.status())}"
+                                      th:text="${#strings.replace(i.status(),'_',' ')}">STATUS</span>
+                            </td>
+                            <td th:if="${isAdmin}" th:text="${i.recruiterName()}">Recruiter</td>
+
+                            <!-- One primary action plus a menu, rather than five
+                                 links competing for the same row. -->
+                            <td class="td-actions">
+                                <span class="row-actions">
+                                    <a th:href="@{'/interviews/' + ${i.id()}}">View</a>
+                                    <span class="menu">
+                                        <button type="button" class="menu-button" data-menu
+                                                aria-haspopup="true" aria-expanded="false"
+                                                th:attr="aria-label='More actions for ' + ${i.displayName()}">&hellip;</button>
+                                        <span class="menu-list" hidden>
+                                            <a th:href="@{'/interviews/' + ${i.id()}}">View details</a>
+                                            <a th:if="${i.hasReport()}"
+                                               th:href="@{'/reports/' + ${i.sessionId()}}">View report</a>
+
+                                            <th:block th:if="${i.status().name() == 'SCHEDULED'}">
+                                                <span class="menu-sep"></span>
+                                                <a th:href="@{${basePath} + '/' + ${i.id()} + '/edit'}">Edit</a>
+                                            </th:block>
+
+                                            <!-- Cancel keeps the record and its history; delete
+                                                 removes it. Only the recruiter routes expose
+                                                 cancel, so only a recruiter is offered it. -->
+                                            <button sec:authorize="hasRole('RECRUITER')"
+                                                    th:if="${i.status().name() != 'COMPLETED' and i.status().name() != 'CANCELLED'}"
+                                                    type="submit"
+                                                    th:formaction="@{'/recruiter/interviews/' + ${i.id()} + '/cancel'}"
+                                                    th:attr="data-confirm='Cancel this interview? The candidate will no longer be able to start it.'">
+                                                Cancel interview
+                                            </button>
+
+                                            <button th:if="${i.status().name() == 'SCHEDULED'}" type="submit"
+                                                    class="danger"
+                                                    th:formaction="@{${basePath} + '/bulk-delete'}"
+                                                    th:attr="data-select-only=${i.id()}, data-confirm='Delete this scheduled interview? This cannot be undone.'">
+                                                Delete
+                                            </button>
+                                        </span>
+                                    </span>
+                                </span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ---- pagination ---- -->
+                <div class="pager" th:if="${result.totalElements() > 0}">
+                    <span>
+                        Showing <strong th:text="${result.firstItem()}">1</strong>&ndash;<strong
+                            th:text="${result.lastItem()}">20</strong>
+                        of <strong th:text="${result.totalElements()}">0</strong>
+                    </span>
+                    <span class="pager-controls">
+                        <a class="btn btn-secondary btn-sm" th:if="${result.hasPrevious()}"
+                           th:href="${listBase} + '&page=' + ${result.page() - 1}">Previous</a>
+                        <span>
+                            Page <strong th:text="${result.page() + 1}">1</strong>
+                            of <strong th:text="${result.totalPages()}">1</strong>
+                        </span>
+                        <a class="btn btn-secondary btn-sm" th:if="${result.hasNext()}"
+                           th:href="${listBase} + '&page=' + ${result.page() + 1}">Next</a>
+                    </span>
+                </div>
+            </div>
+
+            <!-- ---- bulk edit fields ----
+                 Hidden until asked for. Only a field whose checkbox is ticked
+                 is applied; everything else on each targeted interview is left
+                 untouched. Interviews that are no longer scheduled are skipped
+                 and reported back, exactly as a single edit would be refused. -->
+            <div class="filters-body" id="bulk-edit-panel" hidden
+                 style="border-radius:var(--radius);margin-top:16px"
+                 th:unless="${#lists.isEmpty(result.rows())}">
+                <h3 style="margin-bottom:4px">Bulk edit</h3>
+                <p class="hint" style="margin-bottom:16px">
+                    Tick a field to change it on every selected interview. Untouched fields are
+                    left exactly as they are, and each row is validated the same way a single
+                    edit would be.
+                </p>
+
+                <div class="filter-grid">
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyInterviewName">
+                            Set interview name
+                        </label>
+                        <input type="text" name="interviewName" maxlength="150"
+                               style="margin-top:6px"
+                               placeholder="e.g. Java Developer - Campus Drive 2026"
+                               aria-label="New interview name">
+                    </div>
+
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyScheduledAt">
+                            Set date and time
+                        </label>
+                        <input type="datetime-local" name="scheduledAt" style="margin-top:6px"
+                               aria-label="New scheduled date and time">
+                        <div class="hint">Must be in the future. Applied identically to every selected interview.</div>
+                    </div>
+
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyDomain">
+                            Set domain
+                        </label>
+                        <select name="newDomain" style="margin-top:6px" aria-label="New domain">
+                            <option value="">-- select a domain --</option>
+                            <option th:each="d : ${domains}" th:value="${d}" th:text="${d}">Domain</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyInterviewType">
+                            Set interview type
+                        </label>
+                        <select name="newInterviewType" style="margin-top:6px" aria-label="New interview type">
+                            <option value="TECHNICAL">Technical</option>
+                            <option value="HR_GENERAL">HR / General</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyQuestionCount">
+                            Set number of questions
+                        </label>
+                        <input type="number" name="questionCount" min="1" max="10" style="margin-top:6px"
+                               aria-label="New question count">
+                    </div>
+
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyResultVisibleToCandidate">
+                            Set result visibility
+                        </label>
+                        <select name="resultVisibleToCandidate" style="margin-top:6px"
+                                aria-label="Result visibility">
+                            <option value="true">Visible to candidate</option>
+                            <option value="false">Not visible to candidate</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="check">
+                            <input type="checkbox" name="applyCandidateType">
+                            Set candidate type
+                        </label>
+                        <select name="candidateType" style="margin-top:6px" aria-label="New candidate type">
+                            <option value="FRESHER">Fresher</option>
+                            <option value="EXPERIENCED">Experienced</option>
+                        </select>
+                        <input type="number" name="experienceYears" min="0" max="50"
+                               placeholder="Years (only used if Experienced)" style="margin-top:6px"
+                               aria-label="Years of experience">
+                    </div>
+                </div>
+
+                <button type="submit" th:formaction="@{${basePath} + '/bulk-edit'}"
+                        data-confirm-bulk="Apply this bulk edit to {scope}?">Apply to selected</button>
+            </div>
+
+            <!-- ---- selection bar ----
+                 Appears only once something is selected, so the primary
+                 destructive actions are never sitting idle on the page. -->
+            <div class="selection-bar" data-selection-bar hidden
+                 th:unless="${#lists.isEmpty(result.rows())}">
+                <span>
+                    <span class="selection-count" data-selection-count>0 selected</span>
+                    <label class="check" style="color:#fff;margin-top:6px"
+                           th:if="${result.totalPages() > 1}">
+                        <input type="checkbox" name="selectAllMatching" data-select-all-matching>
+                        Select all <span th:text="${result.totalElements()}">0</span> matching the current
+                        filters, across every page
+                    </label>
+                </span>
+                <span style="display:flex;gap:8px;align-items:center">
+                    <button type="button" class="btn btn-secondary" data-open="#bulk-edit-panel">
+                        Bulk edit&hellip;
+                    </button>
+                    <button type="submit" class="btn-danger"
+                            th:formaction="@{${basePath} + '/bulk-delete'}"
+                            data-confirm-bulk="Delete {scope}? This cannot be undone.">
+                        Delete selected
+                    </button>
+                </span>
+            </div>
+
+            <!-- With only one page of results there is nothing for "select all
+                 matching" to add beyond the page checkbox, so it is offered
+                 only when it means something. -->
+            <input type="hidden" name="selectAllMatching" value="false"
+                   th:if="${result.totalPages() <= 1}">
+        </form>
+    </main>
+</div>
+</body>
+</html>

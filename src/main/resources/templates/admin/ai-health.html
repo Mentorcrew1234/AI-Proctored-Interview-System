@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('AI Health')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('ai-health')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('AI Health')}"></div>
+
+    <main class="page">
+
+        <div class="page-head">
+            <div>
+                <h1>AI provider health</h1>
+                <p class="subtitle">
+                    Whether interviews are being generated and graded by the language model or by
+                    the offline fallback. Counted since this server last started.
+                </p>
+            </div>
+        </div>
+
+        <!-- Why this page exists, stated plainly: the fallback is good enough
+             that an outage is otherwise invisible. -->
+        <div class="alert alert-info">
+            <strong>The interview never fails because of this.</strong> When the model is
+            unavailable the offline question bank and scorer take over automatically, and every
+            question and answer records which produced it. This page exists because that
+            substitution is deliberately silent &mdash; without it, a provider that has been down
+            all day looks exactly like one that is working.
+        </div>
+
+        <!-- ---- current state ---------------------------------------------- -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" style="font-size:20px" th:text="${health.providerState()}">Healthy</div>
+                <div class="stat-label">Provider state</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" style="color:var(--success)" th:text="${health.successCount()}">0</div>
+                <div class="stat-label">Model calls succeeded</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value"
+                    th:style="${health.failureCount() > 0} ? 'color:var(--danger)' : ''"
+                    th:text="${health.failureCount()}">0</div>
+                <div class="stat-label">Model calls failed</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" th:text="${health.fallbackCount()}">0</div>
+                <div class="stat-label">Answered by fallback</div>
+            </div>
+        </div>
+
+        <!-- ---- configuration ---------------------------------------------- -->
+        <section class="card">
+            <h3>Configuration</h3>
+            <div class="meta-grid">
+                <span>AI mode</span>
+                <strong th:text="${health.aiMode()}">GEMINI</strong>
+
+                <span>Configured model</span>
+                <strong th:text="${health.configuredModel()}">gemini-3.1-flash-lite</strong>
+
+                <span>API key</span>
+                <strong th:text="${health.geminiConfigured()}
+                                 ? 'Configured' : 'Not configured'">Configured</strong>
+            </div>
+            <p class="hint">
+                Set with <code>INTERVIEW_AI_MODE</code>, <code>GEMINI_MODEL</code> and
+                <code>GEMINI_API_KEY</code>. The key itself is never read back here, logged, or
+                shown on this page &mdash; only whether one is present.
+            </p>
+        </section>
+
+        <!-- ---- last activity ---------------------------------------------- -->
+        <section class="card">
+            <h3>Last activity</h3>
+
+            <div class="empty" th:unless="${health.hasActivity()}">
+                <div class="empty-title">No interviews have used the AI yet</div>
+                <p>
+                    Counters start at zero each time the server starts. Run an interview and the
+                    result of each model call will appear here.
+                </p>
+            </div>
+
+            <div class="meta-grid" th:if="${health.hasActivity()}">
+                <span>Last successful call</span>
+                <strong th:text="${health.lastSuccessAt() != null}
+                                 ? ${health.lastSuccessAt()} : 'Never on this instance'">-</strong>
+
+                <span>Last failed call</span>
+                <strong th:text="${health.lastFailureAt() != null}
+                                 ? ${health.lastFailureAt()} : 'None'">-</strong>
+
+                <span th:if="${health.lastOperation() != null}">Last operation</span>
+                <strong th:if="${health.lastOperation() != null}"
+                        th:text="${health.lastOperation().label()}">Question generation</strong>
+
+                <span th:if="${health.lastModel() != null}">Model used</span>
+                <strong th:if="${health.lastModel() != null}" th:text="${health.lastModel()}">model</strong>
+
+                <span th:if="${health.lastLatencyMs() != null}">Last latency</span>
+                <strong th:if="${health.lastLatencyMs() != null}"
+                        th:text="${health.lastLatencyMs()} + ' ms'">0 ms</strong>
+            </div>
+
+            <!-- Already truncated and redacted before it reaches this page. A
+                 timeout is classified from the exception's cause chain rather
+                 than its own message, which for a timeout is actively
+                 misleading - see AiHealthRegistry.classify. -->
+            <div class="alert alert-warning" th:if="${health.lastFailureReason() != null}"
+                 style="margin-top:14px">
+                <strong th:text="'Last failure (' + ${health.lastFailureCategory().label()} + '):'">Last failure:</strong>
+                <span th:text="${health.lastFailureReason()}">reason</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <p class="hint">
+                <strong>This is runtime state held in memory, not monitoring.</strong> It is lost
+                when the application restarts, and describes only this instance &mdash; it is a
+                signal for a person running a demonstration, not an uptime record. What each
+                interview actually used is stored permanently instead, on the question
+                (<code>source</code>) and on each answer (<code>evaluator</code>,
+                <code>model_name</code>).
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!--
+  The application shell: one sidebar, one topbar, one set of design tokens.
+
+  Every server-rendered page is built the same way, so navigation never moves
+  between screens:
+
+      <body class="app">
+        <div th:replace="~{fragments/layout :: sidebar('interviews')}"></div>
+        <div class="app-main">
+          <div th:replace="~{fragments/layout :: topbar('Interviews')}"></div>
+          <div class="page"> ... page content ... </div>
+        </div>
+      </body>
+
+  The sidebar is generated from the authenticated role, so nobody is offered a
+  link they would only be denied at. That is a usability measure, not a security
+  one - SecurityConfig and the service layer remain the authority, and hiding a
+  link has never been what stops anyone reaching a page.
+-->
+
+<head th:fragment="head(pageTitle)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${pageTitle} + ' · Proctored Interview System'">Proctored Interview System</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+
+<body>
+
+<!-- ====================================================================== -->
+<!-- Sidebar                                                                 -->
+<!-- ====================================================================== -->
+<aside th:fragment="sidebar(active)" class="sidebar">
+
+    <!-- Icons are an inline sprite: crisp at any size, themed with
+         currentColor, and no external request (an interview must work with no
+         internet). -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="ico-dashboard" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linejoin="round">
+            <rect x="1.75" y="1.75" width="5" height="5" rx="1"/>
+            <rect x="9.25" y="1.75" width="5" height="5" rx="1"/>
+            <rect x="1.75" y="9.25" width="5" height="5" rx="1"/>
+            <rect x="9.25" y="9.25" width="5" height="5" rx="1"/>
+        </symbol>
+        <symbol id="ico-interviews" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1.75" y="3" width="12.5" height="11.25" rx="1.5"/>
+            <path d="M1.75 6.5h12.5M5 1.75v2.5M11 1.75v2.5"/>
+        </symbol>
+        <symbol id="ico-reports" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 1.75H4.25a1.5 1.5 0 0 0-1.5 1.5v9.5a1.5 1.5 0 0 0 1.5 1.5h7.5a1.5 1.5 0 0 0 1.5-1.5V6z"/>
+            <path d="M9 1.75V6h4.25M5.75 11.5V9M8 11.5V8M10.25 11.5v-1.5"/>
+        </symbol>
+        <symbol id="ico-users" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="5" r="2.5"/>
+            <path d="M1.75 13.75a4.25 4.25 0 0 1 8.5 0M11 2.9a2.5 2.5 0 0 1 0 4.2M12.4 9.9a4.25 4.25 0 0 1 1.85 3.85"/>
+        </symbol>
+        <symbol id="ico-health" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1.5 8h3l1.5-4 3 8 1.5-4h3"/>
+        </symbol>
+        <symbol id="ico-schedule" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13.25 7.5V3.25a1.5 1.5 0 0 0-1.5-1.5h-7.5a1.5 1.5 0 0 0-1.5 1.5v9.5a1.5 1.5 0 0 0 1.5 1.5H7.5"/>
+            <path d="M2.75 5.75h10.5M11.75 9.75v4.5M9.5 12h4.5"/>
+        </symbol>
+        <symbol id="ico-bulk" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1.75" y="2.75" width="12.5" height="10.5" rx="1.5"/>
+            <path d="M1.75 6.25h12.5M6 6.25v7M10 6.25v7"/>
+        </symbol>
+        <symbol id="ico-results" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 13.25h12M4.25 13V8.5M7.5 13V4.25M10.75 13v-6"/>
+        </symbol>
+    </svg>
+
+    <a class="sidebar-brand" th:href="@{/}">
+        <span class="sidebar-mark" aria-hidden="true">AI</span>
+        <span class="sidebar-brand-text">
+            Proctored Interviews
+            <small>AI interview platform</small>
+        </span>
+    </a>
+
+    <nav class="sidebar-nav" aria-label="Main">
+
+        <!-- ---- Administrator ------------------------------------------- -->
+        <th:block sec:authorize="hasRole('ADMIN')">
+            <a class="nav-link" th:href="@{/admin/dashboard}"
+               th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-dashboard"/></svg>
+                Dashboard
+            </a>
+
+            <div class="nav-section">Manage</div>
+            <a class="nav-link" th:href="@{/admin/interviews}"
+               th:attr="aria-current=${active == 'interviews'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-interviews"/></svg>
+                Interviews
+            </a>
+            <a class="nav-link" th:href="@{/admin/reports}"
+               th:attr="aria-current=${active == 'reports'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-reports"/></svg>
+                Reports
+            </a>
+            <a class="nav-link" th:href="@{/admin/candidates}"
+               th:attr="aria-current=${active == 'candidates'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-users"/></svg>
+                Candidates
+            </a>
+            <a class="nav-link" th:href="@{/admin/users}"
+               th:attr="aria-current=${active == 'users'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-users"/></svg>
+                Users
+            </a>
+            <a class="nav-link" th:href="@{/admin/ai-health}"
+               th:attr="aria-current=${active == 'ai-health'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-health"/></svg>
+                AI Health
+            </a>
+            <a class="nav-link" th:href="@{/admin/data-retention}"
+               th:attr="aria-current=${active == 'data-retention'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-health"/></svg>
+                Data Retention
+            </a>
+
+            <div class="nav-section">Scheduling</div>
+            <a class="nav-link" th:href="@{/admin/interviews/new}"
+               th:attr="aria-current=${active == 'schedule'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-schedule"/></svg>
+                Schedule Interview
+            </a>
+            <a class="nav-link" th:href="@{/scheduling/bulk}"
+               th:attr="aria-current=${active == 'bulk'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-bulk"/></svg>
+                Bulk Schedule
+            </a>
+        </th:block>
+
+        <!-- ---- Recruiter ----------------------------------------------- -->
+        <th:block sec:authorize="hasRole('RECRUITER')">
+            <a class="nav-link" th:href="@{/recruiter/dashboard}"
+               th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-dashboard"/></svg>
+                Dashboard
+            </a>
+
+            <div class="nav-section">Manage</div>
+            <a class="nav-link" th:href="@{/recruiter/interviews}"
+               th:attr="aria-current=${active == 'interviews'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-interviews"/></svg>
+                Interviews
+            </a>
+            <a class="nav-link" th:href="@{/recruiter/reports}"
+               th:attr="aria-current=${active == 'reports'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-reports"/></svg>
+                Reports
+            </a>
+            <a class="nav-link" th:href="@{/recruiter/candidates}"
+               th:attr="aria-current=${active == 'candidates'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-users"/></svg>
+                Candidates
+            </a>
+
+            <div class="nav-section">Scheduling</div>
+            <a class="nav-link" th:href="@{/recruiter/interviews/new}"
+               th:attr="aria-current=${active == 'schedule'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-schedule"/></svg>
+                Schedule Interview
+            </a>
+            <a class="nav-link" th:href="@{/scheduling/bulk}"
+               th:attr="aria-current=${active == 'bulk'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-bulk"/></svg>
+                Bulk Schedule
+            </a>
+        </th:block>
+
+        <!-- ---- Candidate -----------------------------------------------
+             Deliberately two entries over one page: a candidate has one job
+             here, and both views are already loaded, so switching costs no
+             request. Nothing about other candidates, scheduling or the system
+             is reachable from this role. -->
+        <th:block sec:authorize="hasRole('CANDIDATE')">
+            <a class="nav-link" th:href="@{/}"
+               th:attr="aria-current=${active == 'dashboard'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-interviews"/></svg>
+                My Interviews
+            </a>
+            <a class="nav-link" th:href="@{/(tab='completed')}"
+               th:attr="aria-current=${active == 'results'} ? 'page' : null">
+                <svg class="nav-ico" width="16" height="16" aria-hidden="true"><use href="#ico-results"/></svg>
+                My Results
+            </a>
+        </th:block>
+    </nav>
+
+    <div class="sidebar-foot">
+        <div class="who-card">
+            <span class="avatar" aria-hidden="true"
+                  th:text="${#strings.substring(#authentication.principal.fullName, 0, 1)}">A</span>
+            <span class="who-name">
+                <span sec:authentication="principal.fullName">User</span>
+                <span class="who-role" sec:authentication="principal.role">ROLE</span>
+            </span>
+        </div>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn btn-secondary btn-sm">Sign out</button>
+        </form>
+    </div>
+</aside>
+
+<!-- ====================================================================== -->
+<!-- Topbar                                                                  -->
+<!-- ====================================================================== -->
+<header th:fragment="topbar(title)" class="topbar">
+    <button type="button" class="sidebar-toggle" data-nav-toggle
+            aria-expanded="false" aria-label="Show navigation">&#9776;</button>
+    <span class="topbar-title" th:text="${title}">Page</span>
+    <span class="topbar-spacer"></span>
+</header>
+
+<!-- ====================================================================== -->
+<!-- Scheduling mode switch                                                  -->
+<!-- ====================================================================== -->
+<!--
+  Three ways to schedule, and they are separate pages rather than tabs because
+  they are different workflows: one form, one form with a multi-select, and a
+  four-step file upload. A segmented control moves between them; a tab strip
+  would imply one dataset filtered three ways.
+
+  The links are role-scoped because the routes are: /admin/** and /recruiter/**
+  are closed to each other, so a single hard-coded path would send one of the
+  two roles to a 403. Bulk is the exception - it lives under /scheduling/**,
+  which both staff roles reach.
+-->
+<nav th:fragment="scheduleTabs(active)" class="segmented" aria-label="Scheduling mode">
+    <th:block sec:authorize="hasRole('ADMIN')">
+        <a th:href="@{/admin/interviews/new}"
+           th:attr="aria-current=${active == 'single'} ? 'page' : null">One interview</a>
+        <a th:href="@{/admin/interviews/new-multi}"
+           th:attr="aria-current=${active == 'multi'} ? 'page' : null">Several candidates</a>
+    </th:block>
+
+    <th:block sec:authorize="hasRole('RECRUITER')">
+        <a th:href="@{/recruiter/interviews/new}"
+           th:attr="aria-current=${active == 'single'} ? 'page' : null">One interview</a>
+        <a th:href="@{/recruiter/interviews/new-multi}"
+           th:attr="aria-current=${active == 'multi'} ? 'page' : null">Several candidates</a>
+    </th:block>
+
+    <a th:href="@{/scheduling/bulk}"
+       th:attr="aria-current=${active == 'bulk'} ? 'page' : null">Bulk from Excel</a>
+</nav>
+
+<!-- ====================================================================== -->
+<!-- Flash messages                                                          -->
+<!-- ====================================================================== -->
+<th:block th:fragment="flash">
+    <div class="alert alert-success" role="status" th:if="${message}" th:text="${message}"></div>
+    <div class="alert alert-error" role="alert" th:if="${error}" th:text="${error}"></div>
+</th:block>
+
+</body>
+</html>

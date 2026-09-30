@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<!--
+  What would be erased for one candidate, before anything is.
+
+  The counts come first and the form second, deliberately. "Delete this person's
+  data" is not a request anyone should approve without seeing its size, and the
+  action cannot be undone from a backup this prototype does not take.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Candidate data')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('users')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Candidate data')}"></div>
+
+    <main class="page">
+        <div class="page-head">
+            <div>
+                <h1 th:text="${preview.candidateName()}">Candidate</h1>
+                <p class="subtitle" th:text="${preview.candidateEmail()}">email</p>
+            </div>
+            <div class="page-actions">
+                <a class="btn btn-secondary" th:href="@{/admin/users}">Back to users</a>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <section class="card">
+            <h3>What is stored</h3>
+            <p class="hint" style="margin-bottom:14px">
+                Everything this system holds about this candidate, other than their
+                account itself.
+            </p>
+
+            <div class="meta-grid">
+                <span>Interviews</span><strong th:text="${preview.interviews()}">0</strong>
+                <span>Sessions</span><strong th:text="${preview.sessions()}">0</strong>
+                <span>Questions</span><strong th:text="${preview.questions()}">0</strong>
+                <span>Answers &amp; transcripts</span><strong th:text="${preview.answers()}">0</strong>
+                <span>Proctoring observations</span><strong th:text="${preview.proctorEvents()}">0</strong>
+                <span>Reports</span><strong th:text="${preview.reports()}">0</strong>
+                <span>Recorded decisions</span><strong th:text="${preview.reviews()}">0</strong>
+                <span th:if="${preview.oldestScheduledAt() != null}">Oldest interview</span>
+                <strong th:if="${preview.oldestScheduledAt() != null}"
+                        th:text="${#temporals.format(preview.oldestScheduledAt(), 'dd MMM yyyy')}">date</strong>
+            </div>
+        </section>
+
+        <section class="card" th:if="${preview.isEmpty()}">
+            <div class="empty">
+                <div class="empty-title">No interview data</div>
+                <p style="margin-bottom:0">
+                    This candidate has no interviews, so there is nothing to erase
+                    beyond the account itself.
+                </p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h3>Erase this data</h3>
+
+            <div class="alert alert-warning">
+                <strong>This cannot be undone.</strong>
+                There is no backup to restore from. The transcripts of what this
+                candidate said, the observations recorded through their camera, their
+                scores and any decisions taken about them are removed permanently.
+                A record that the deletion happened is kept &mdash; the deleted content
+                is not.
+            </div>
+
+            <form th:action="@{'/admin/users/' + ${preview.userId()} + '/data/delete'}" method="post">
+                <div class="field">
+                    <label for="scope">What to erase</label>
+                    <select id="scope" name="scope" required>
+                        <!-- Two genuinely different requests. Clearing the history of
+                             someone who will interview again is not the same as
+                             removing them entirely. -->
+                        <option value="INTERVIEW_DATA_ONLY">
+                            Interview data only &mdash; keep the account
+                        </option>
+                        <option value="INTERVIEW_DATA_AND_ACCOUNT">
+                            Interview data and the account
+                        </option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="reason">Reason (optional)</label>
+                    <input type="text" id="reason" name="reason" maxlength="500"
+                           placeholder="A request reference, or why this is being erased">
+                </div>
+
+                <div class="field">
+                    <label for="confirmEmail">
+                        Type <strong th:text="${preview.candidateEmail()}">email</strong> to confirm
+                    </label>
+                    <!-- Naming what is being erased, rather than clicking twice.
+                         A second click is a reflex; typing the address is not. -->
+                    <input type="text" id="confirmEmail" name="confirmEmail" required
+                           autocomplete="off" placeholder="candidate@example.com">
+                </div>
+
+                <button type="submit" class="btn btn-danger"
+                        data-confirm="Erase this candidate's data permanently? This cannot be undone.">
+                    Erase permanently
+                </button>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

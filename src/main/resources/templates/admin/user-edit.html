@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!--
+  Correct the details on an existing account.
+
+  Unlike the create form, this renders ONLY the profile block matching the
+  account's actual role, server-side. Nothing is hidden and still submitted -
+  the trap documented in CLAUDE.md, where a hidden panel's inputs post anyway
+  and quietly win. The role cannot change here, so there is nothing to toggle
+  between and no script on this page at all.
+
+  Email, role and status are shown as facts, not fields. UpdateUserRequest has
+  no property for any of them, so a crafted POST cannot set them either.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Edit User')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('users')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Edit user')}"></div>
+
+    <main class="page page-narrow">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a th:href="@{/admin/users}">Users</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page" th:text="${account.fullName()}">Name</span>
+        </nav>
+
+        <div class="page-head">
+            <div>
+                <h1>Edit details</h1>
+                <p class="subtitle">
+                    Correct what is stored about this account. To change the sign-in
+                    email, the role or the password, or to disable the account, use the
+                    operation for that &mdash; none of them is a detail.
+                </p>
+            </div>
+        </div>
+
+        <div class="alert alert-error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+        <form th:action="@{'/admin/users/' + ${account.id()}}" th:object="${form}" method="post">
+            <div class="card">
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Account</h3>
+                        <p>These identify the account and are not edited here.</p>
+                    </div>
+
+                    <div class="meta-grid">
+                        <span>Email</span>
+                        <strong th:text="${account.email()}">email</strong>
+                        <span>Role</span>
+                        <strong th:text="${#strings.capitalize(#strings.toLowerCase(account.role()))}">Role</strong>
+                        <span>Status</span>
+                        <strong th:text="${account.enabled()} ? 'Enabled' : 'Disabled'">Enabled</strong>
+                    </div>
+
+                    <div class="form-grid" style="margin-top:16px">
+                        <div class="field">
+                            <label for="fullName">Full name <span class="req">*</span></label>
+                            <input type="text" id="fullName" th:field="*{fullName}" autocomplete="name">
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('fullName')}"
+                                 th:errors="*{fullName}"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section" th:if="${account.role().name() == 'CANDIDATE'}">
+                    <div class="form-section-head">
+                        <h3>Candidate profile <span class="opt">&mdash; optional</span></h3>
+                        <p>Background detail kept on the account. Each interview sets its own
+                           experience and domain, so nothing here changes how one is scored,
+                           and correcting it does not alter a report already produced.</p>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="phone">Phone</label>
+                            <input type="text" id="phone" th:field="*{phone}" autocomplete="tel">
+                        </div>
+                        <div class="field">
+                            <label for="collegeName">College name</label>
+                            <input type="text" id="collegeName" th:field="*{collegeName}"
+                                   maxlength="150" placeholder="e.g. PSG College of Technology">
+                            <div class="hint">Leave blank if it does not apply.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('collegeName')}"
+                                 th:errors="*{collegeName}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="location">Location</label>
+                            <input type="text" id="location" th:field="*{location}"
+                                   maxlength="120" placeholder="e.g. Coimbatore">
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('location')}"
+                                 th:errors="*{location}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="skills">Skills</label>
+                            <input type="text" id="skills" th:field="*{skills}"
+                                   maxlength="255" placeholder="e.g. Java, Spring Boot, SQL">
+                            <div class="hint">Comma-separated. Each one becomes its own filter
+                                option on the candidates page.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('skills')}"
+                                 th:errors="*{skills}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="candidateType">Candidate type</label>
+                            <select id="candidateType" th:field="*{candidateType}">
+                                <option value="FRESHER">Fresher</option>
+                                <option value="EXPERIENCED">Experienced</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="experienceYears">Years of experience</label>
+                            <input type="number" id="experienceYears" min="0" max="50"
+                                   th:field="*{experienceYears}">
+                        </div>
+                        <div class="field">
+                            <label for="primaryDomain">Primary domain</label>
+                            <input type="text" id="primaryDomain" th:field="*{primaryDomain}"
+                                   placeholder="e.g. Java">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section" th:if="${account.role().name() == 'RECRUITER'}">
+                    <div class="form-section-head">
+                        <h3>Recruiter profile <span class="opt">&mdash; optional</span></h3>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="department">Department</label>
+                            <input type="text" id="department" th:field="*{department}">
+                        </div>
+                        <div class="field">
+                            <label for="designation">Designation</label>
+                            <input type="text" id="designation" th:field="*{designation}">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- An administrator has no profile of either kind, so the name
+                     above is the whole of what there is to correct. -->
+                <section class="form-section" th:if="${account.role().name() == 'ADMIN'}">
+                    <div class="form-section-head">
+                        <h3>Profile</h3>
+                        <p>An administrator account carries no profile detail.</p>
+                    </div>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit">Save changes</button>
+                    <a class="btn btn-secondary" th:href="@{/admin/users}">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,298 @@
+spring:
+  application:
+    name: proctor-interview
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3360}/${DB_NAME:proctor_interview}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+
+  jpa:
+    # Flyway owns the schema. Hibernate only verifies that the entities match it.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  thymeleaf:
+    cache: false
+
+  # SMTP transport. Gmail needs a 16-character APP PASSWORD, not the account
+  # password - Google refuses the account password for SMTP. Generate one at
+  # https://myaccount.google.com/apppasswords (requires 2-Step Verification).
+  #
+  # Put the username and password in the gitignored config/application.yml, or
+  # set MAIL_USERNAME / MAIL_PASSWORD. Blank is valid and safe: with
+  # app.mail.enabled=false below, nothing is sent and no connection is made.
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          # Fail a dead SMTP host quickly rather than holding the scheduling
+          # request open - sending already happens after the commit, so a slow
+          # server costs the recruiter a wait for work that is already done.
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  servlet:
+    multipart:
+      # Bulk scheduling uploads. A few hundred rows is well under 1 MB; the
+      # ceiling is here so an oversized file is rejected cleanly rather than
+      # consuming memory.
+      max-file-size: 5MB
+      max-request-size: 6MB
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        same-site: lax
+
+app:
+  # Repeated failed logins for one account are slowed down. In memory, so a
+  # restart clears it - see LoginAttemptService for why that is acceptable here.
+  login-throttle:
+    enabled: ${LOGIN_THROTTLE_ENABLED:true}
+    max-attempts: 5
+    window-minutes: 15
+    lock-minutes: 10
+
+  # How long interview data is expected to be kept. Nothing is deleted because
+  # of this value - it drives a report on /admin/data-retention and a person
+  # decides. See RetentionProperties for why there is no scheduled purge.
+  retention:
+    months: 24
+
+  # How long a password reset link stays usable. A newer request supersedes an
+  # older one regardless, so this window is not the only protection.
+  password-reset:
+    expiry-minutes: 30
+
+  jwt:
+    # Development default. Override with the JWT_SECRET environment variable
+    # anywhere real. Must be at least 32 characters for HS256.
+    secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789abcdef}
+    expiry-minutes: 240
+
+  # Seed accounts created on first startup if the users table is empty.
+  seed:
+    enabled: true
+    admin-email: admin@demo.local
+    admin-password: Admin@123
+    admin-name: System Administrator
+    # Demo recruiter + candidate so the app is usable immediately.
+    demo-users: true
+
+  interview:
+    default-question-count: 5
+
+    # ---- interview execution mode --------------------------------------
+    #
+    # NORMAL = the real candidate experience. The interview screen shows the
+    #          question, the answer box, progress and Finish, and nothing else.
+    #          No detection state, no event counters, no model status, no
+    #          bounding boxes.
+    #
+    # DEMO   = the same interview with a monitoring panel and a detection
+    #          overlay on the camera preview, so a viva audience can see what
+    #          the prototype is actually detecting.
+    #
+    # This is a PRESENTATION setting only. Both modes run the same questions,
+    # the same detection pipeline, the same event recording and the same
+    # report. DEMO never disables proctoring and never invents a metric: every
+    # value it shows is one the candidate's own browser already computed from
+    # their own camera.
+    #
+    # Switch without touching code:
+    #     INTERVIEW_MODE=NORMAL   (default)
+    #     INTERVIEW_MODE=DEMO
+    #
+    # An absent, blank or unrecognised value falls back to NORMAL and logs a
+    # warning - see InterviewModeProperties. The dangerous mistake would be
+    # silently running a real candidate interview in DEMO, so NORMAL is the
+    # only thing this can default to.
+    mode: ${INTERVIEW_MODE:DEMO}
+
+    # MOCK  = offline question bank + heuristic scorer, no external calls.
+    # GEMINI = use Gemini when a key is configured, falling back on failure.
+    # MOCK is the development default: answer evaluation runs inside the submit
+    # request, so a slow or failing LLM call is felt as a delay between
+    # questions. Override with INTERVIEW_AI_MODE=GEMINI.
+    #
+    # Unrelated to `mode` above: this picks the AI provider, that one picks
+    # what the candidate sees.
+    ai-mode: ${INTERVIEW_AI_MODE:MOCK}
+
+    # FIXED    = the existing, fully verified behaviour: every question is
+    #            generated as one complete set before the candidate sees the
+    #            first one.
+    # ADAPTIVE = the next question is generated only once the previous one is
+    #            answered and evaluated, using its difficulty and Java-computed
+    #            overall score as context. Backend foundation only as of
+    #            Phase 6.2 - not yet wired into any endpoint.
+    #
+    # An absent, blank or unrecognised value falls back to FIXED and logs a
+    # warning - see QuestionModeProperties. FIXED is the only behaviour
+    # verified end to end against real Gemini, so it is the only safe default.
+    question-mode: ${INTERVIEW_QUESTION_MODE:FIXED}
+
+  # ---- candidate email ---------------------------------------------------
+  #
+  # Sends the interview invitation (link + details) when an interview is
+  # scheduled, on every path: the single form, multi-candidate scheduling and
+  # the Excel bulk upload. A bulk upload that creates a new candidate account
+  # also emails that account's generated password, which is otherwise only
+  # readable from the result workbook.
+  #
+  # OFF by default. With enabled=false nothing is sent, no SMTP connection is
+  # attempted, and scheduling behaves exactly as it did before email existed.
+  # Sending never blocks or fails scheduling: it happens after the transaction
+  # commits, and any failure is logged, not thrown.
+  #
+  #     MAIL_ENABLED=true
+  #     MAIL_FROM=you@gmail.com
+  #     MAIL_USERNAME=you@gmail.com
+  #     MAIL_PASSWORD=<16-char Google app password>
+  #     MAIL_BASE_URL=https://your.domain
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    # The visible sender. For Gmail this must be the same account as
+    # spring.mail.username, which Google enforces at the SMTP layer.
+    from: ${MAIL_FROM:}
+    from-name: ${MAIL_FROM_NAME:Proctored Interviews}
+    # Must be the address candidates can actually reach. An invite link has to
+    # be absolute to be clickable in a mail client, and only the deployment
+    # knows its own public URL.
+    base-url: ${MAIL_BASE_URL:http://localhost:8080}
+
+  gemini:
+    # Free key from https://aistudio.google.com/apikey - put it in the gitignored
+    # config/application.yml, or set GEMINI_API_KEY. Blank is valid: the app then
+    # runs entirely on the offline question bank and heuristic scorer.
+    api-key: ${GEMINI_API_KEY:}
+    # Overridable like the key and timeout, because a model name is not a
+    # permanent fact: gemini-2.5-flash was the original default and Google now
+    # refuses it for keys created after its retirement, with
+    # "no longer available to new users" - a 404 that sent every call to the
+    # offline bank while looking, from inside the app, like an ordinary failure.
+    #
+    # gemini-3.1-flash-lite measured 2.5 s for 5 questions, 4.8 s for 10 and
+    # 1.9 s per evaluation - inside the 8 s timeout below. The replacement
+    # Google's own error message suggests, gemini-3.6-flash, measured 34 s and
+    # returned 503 "high demand" on two of three attempts; it is a reasoning
+    # model, and adopting it would mean raising the timeout far past what a
+    # candidate should wait between questions.
+    model: ${GEMINI_MODEL:gemini-3.1-flash-lite}
+    base-url: https://generativelanguage.googleapis.com
+    # Kept short deliberately: this call is synchronous inside answer
+    # submission, so it is the candidate's waiting time when it fails.
+    timeout-seconds: ${GEMINI_TIMEOUT_SECONDS:8}
+
+  report:
+    scoring:
+      technical-weight: 0.35
+      problem-solving-weight: 0.25
+      communication-weight: 0.20
+      relevance-weight: 0.20
+      recommended-threshold: 70
+      further-review-threshold: 50
+    proctoring:
+      # When true, a RECOMMENDED result is capped at FURTHER_REVIEW if any of the
+      # trigger observations occurred, so a human checks it. Proctoring never
+      # lowers a score and never produces NOT_RECOMMENDED.
+      force-review-enabled: true
+      review-trigger-types:
+        - PHONE_DETECTED
+        - MULTIPLE_FACES
+        - MULTIPLE_PERSONS
+
+  transcript:
+    # Multi-word fillers, stripped BEFORE single words.
+    #
+    # Several entries here exist specifically to catch a word that is only a
+    # filler in one position. "right" is a filler in "it's a hash map, right?"
+    # and meaningful in "the right approach", so the phrase list catches the
+    # first and the word list deliberately does not contain it.
+    filler-phrases:
+      - you know what i mean
+      - you know
+      - sort of
+      - kind of
+      - i mean
+      - you see
+      - or something like that
+      - or something
+      - and so on
+      - and stuff
+      - at the end of the day
+      - to be honest
+      - let me think
+      - how do i say
+      - if that makes sense
+      - does that make sense
+      - so yeah
+      - i guess
+      # Position-sensitive: only filler when trailing a clause.
+      - ", right"
+      - ", okay"
+      - ", yeah"
+      - ", you know"
+      # Restarts a speaker makes while thinking.
+      - i think that
+      - what i mean is
+      - the thing is
+
+    # Single words, removed wherever they appear.
+    #
+    # This list is deliberately CONSERVATIVE. Every word here is removed
+    # anywhere in the answer, and the cleaned text is what the evaluator
+    # scores - so a word with any common technical meaning must not be here,
+    # however often it is also used as a filler.
+    #
+    # Deliberately excluded, and why:
+    #   like      - "works like a contract", "types like String"
+    #   right     - "the right approach"        (see the phrase list)
+    #   okay      - "performance was okay"      (see the phrase list)
+    #   actually  - "it actually returns null" is a real contrast
+    #   just      - "just one thread", "just in time"
+    #   so        - "so the query runs twice" is a real consequence
+    #   well      - "handles it well"
+    #   really    - "really slow" is a genuine intensifier
+    filler-words:
+      - um
+      - uh
+      - umm
+      - uhh
+      - hmm
+      - mhm
+      - er
+      - erm
+      - ah
+      - eh
+      - basically
+      - literally
+      - obviously
+      - essentially
+      - anyway
+      - anyways
+
+logging:
+  level:
+    com.project.proctorinterview: debug

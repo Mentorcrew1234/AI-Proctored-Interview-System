@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Reports')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('reports')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Reports')}"></div>
+
+    <!--
+      Results for interviews that have finished.
+
+      This is a view of the interview list, not a second dataset: the same
+      filter object, the same query service and - the part that matters - the
+      same server-side authorization scope. A recruiter sees reports for their
+      own interviews and nothing else, for exactly the reason they see only
+      their own interviews on the list page.
+
+      The status is pinned to COMPLETED by the controller rather than offered as
+      a control, because a page called Reports that could show scheduled
+      interviews would not mean anything.
+    -->
+    <main class="page"
+          th:with="listBase=@{${basePath}(search=${filter.search},fromDate=${filter.fromDate},toDate=${filter.toDate},domain=${filter.domain},experienceType=${filter.experienceType},interviewType=${filter.interviewType},recruiterId=${filter.recruiterId},sortBy=${filter.sortBy},sortDirection=${filter.sortDirection},size=${result.size()})},
+                    exportHref=@{${exportBasePath} + '/export.xlsx'(tab='COMPLETED',status='COMPLETED',search=${filter.search},fromDate=${filter.fromDate},toDate=${filter.toDate},domain=${filter.domain},experienceType=${filter.experienceType},interviewType=${filter.interviewType},recruiterId=${filter.recruiterId})}">
+
+        <div class="page-head">
+            <div>
+                <h1>Reports</h1>
+                <p class="subtitle">
+                    Scores and recommendations for completed interviews. Every recommendation is
+                    deterministic arithmetic over the four scores &mdash; advisory input for a
+                    human decision, never a hiring decision.
+                </p>
+            </div>
+            <div class="page-actions">
+                <a class="btn" th:if="${result.totalElements() > 0}"
+                   th:href="${result.totalElements() <= exportSoftLimit}
+                            ? ${exportHref} : ${exportHref} + '&confirmLarge=true'"
+                   th:attr="data-confirm=${result.totalElements() > exportSoftLimit}
+                            ? 'This exports every completed interview matching the current filters. It may take a moment to build. Continue?' : null">
+                    Export <span th:text="${result.totalElements()}">0</span> to Excel
+                </a>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value is-success" th:text="${insights.completed()}">0</div>
+            </div>
+            <a class="stat" th:href="@{${exportBasePath}(tab='IN_PROGRESS')}">
+                <div class="stat-label">Still in progress</div>
+                <div class="stat-value is-warning" th:text="${insights.inProgress()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${exportBasePath}(tab='UPCOMING')}">
+                <div class="stat-label">Yet to happen</div>
+                <div class="stat-value" th:text="${insights.upcoming()}">0</div>
+            </a>
+            <a class="stat" th:href="@{${exportBasePath}(tab='ALL')}">
+                <div class="stat-label">All interviews</div>
+                <div class="stat-value" th:text="${insights.total()}">0</div>
+            </a>
+        </div>
+
+        <!-- ---- search and filters ------------------------------------------ -->
+        <form method="get" th:action="@{${basePath}}" th:object="${filter}">
+            <div class="toolbar">
+                <div class="toolbar-search">
+                    <label class="visually-hidden" for="search">Search reports</label>
+                    <input type="search" id="search" name="search" th:value="*{search}"
+                           placeholder="Search candidate name, email or interview name...">
+                    <button type="submit" class="btn-secondary">Search</button>
+                </div>
+
+                <button type="button" class="btn btn-secondary" data-toggle="#filter-panel">
+                    Filters
+                    <span class="badge" th:if="${filter.hasAdvancedFilters()}">on</span>
+                </button>
+
+                <span class="topbar-spacer"></span>
+
+                <label class="visually-hidden" for="size">Rows per page</label>
+                <select id="size" name="size" style="width:auto" data-autosubmit>
+                    <option th:each="ps : ${pageSizes}" th:value="${ps}" th:text="${ps} + ' per page'"
+                            th:selected="${filter.size == ps}">20</option>
+                </select>
+            </div>
+
+            <div class="filters-body" id="filter-panel" style="border-radius:var(--radius)"
+                 th:attr="hidden=${filter.hasAdvancedFilters()} ? null : 'hidden'">
+                <div class="filter-grid">
+                    <div class="field">
+                        <label for="fromDate">Interviewed from</label>
+                        <input type="date" id="fromDate" name="fromDate" th:value="*{fromDate}">
+                    </div>
+                    <div class="field">
+                        <label for="toDate">Interviewed until</label>
+                        <input type="date" id="toDate" name="toDate" th:value="*{toDate}">
+                    </div>
+                    <div class="field">
+                        <label for="domain">Domain</label>
+                        <select id="domain" name="domain">
+                            <option value="">Any domain</option>
+                            <option th:each="d : ${domains}" th:value="${d}" th:text="${d}"
+                                    th:selected="${filter.domain == d}">D</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="interviewType">Interview type</label>
+                        <select id="interviewType" name="interviewType">
+                            <option value="">Any type</option>
+                            <option th:each="t : ${interviewTypes}" th:value="${t}"
+                                    th:text="${#strings.replace(t,'_',' / ')}"
+                                    th:selected="${filter.interviewType != null and filter.interviewType.name() == t.name()}">T</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="experienceType">Experience</label>
+                        <select id="experienceType" name="experienceType">
+                            <option value="">Any experience</option>
+                            <option th:each="e : ${experienceTypes}" th:value="${e}"
+                                    th:text="${#strings.capitalize(#strings.toLowerCase(e))}"
+                                    th:selected="${filter.experienceType != null and filter.experienceType.name() == e.name()}">E</option>
+                        </select>
+                    </div>
+                    <div class="field" th:if="${isAdmin}">
+                        <label for="recruiterId">Recruiter</label>
+                        <select id="recruiterId" name="recruiterId">
+                            <option value="">Any recruiter</option>
+                            <option th:each="r : ${recruiters}" th:value="${r.id()}"
+                                    th:text="${r.fullName()}"
+                                    th:selected="${filter.recruiterId == r.id()}">R</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="sortBy">Sort by</label>
+                        <select id="sortBy" name="sortBy">
+                            <option value="scheduledAt" th:selected="${filter.sortBy == 'scheduledAt'}">Interview date</option>
+                            <option value="candidateName" th:selected="${filter.sortBy == 'candidateName'}">Candidate name</option>
+                            <option value="interviewName" th:selected="${filter.sortBy == 'interviewName'}">Interview name</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="sortDirection">Order</label>
+                        <select id="sortDirection" name="sortDirection">
+                            <option value="" th:selected="${filter.sortDirection == null or filter.sortDirection == ''}">Default</option>
+                            <option value="asc" th:selected="${filter.sortDirection == 'asc'}">Oldest first</option>
+                            <option value="desc" th:selected="${filter.sortDirection == 'desc'}">Newest first</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;align-items:center">
+                    <button type="submit">Apply filters</button>
+                    <a class="btn btn-ghost" th:href="@{${basePath}}">Clear all</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="chips" th:unless="${#lists.isEmpty(activeFilters)}" style="margin:12px 0">
+            <span class="hint" style="margin:0">Showing:</span>
+            <span class="chip" th:each="af : ${activeFilters}" th:text="${af.label()}">filter</span>
+            <a class="btn btn-ghost btn-sm" th:href="@{${basePath}}">Clear</a>
+        </div>
+
+        <!-- ---- results ----------------------------------------------------- -->
+        <div class="card card-flush">
+
+            <div class="empty" th:if="${#lists.isEmpty(result.rows())}">
+                <div class="empty-mark" aria-hidden="true">&#128202;</div>
+                <div class="empty-title"
+                     th:text="${filter.hasAdvancedFilters() or !#strings.isEmpty(filter.search)}
+                              ? 'No reports match these filters'
+                              : 'No reports yet'">No reports yet</div>
+                <p th:if="${filter.hasAdvancedFilters() or !#strings.isEmpty(filter.search)}">
+                    No completed interview matches what you have selected. Try a wider date range
+                    or clear the filters.
+                </p>
+                <p th:unless="${filter.hasAdvancedFilters() or !#strings.isEmpty(filter.search)}">
+                    A report is produced automatically when a candidate finishes their interview.
+                    Nothing has been completed yet.
+                </p>
+                <a class="btn btn-secondary" th:href="@{${exportBasePath}}">View all interviews</a>
+            </div>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(result.rows())}">
+                <table>
+                    <caption class="visually-hidden">Completed interviews and their results</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Interview</th>
+                        <th scope="col">Completed</th>
+                        <th scope="col" class="td-num">Overall</th>
+                        <th scope="col">Recommendation</th>
+                        <th scope="col">Decision</th>
+                        <th scope="col" th:if="${isAdmin}">Recruiter</th>
+                        <th scope="col" class="td-actions">Report</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="r : ${result.rows()}">
+                        <td>
+                            <span class="cell-title" th:text="${r.candidateName()}">Candidate</span>
+                            <span class="cell-sub" th:text="${r.candidateEmail()}">email</span>
+                        </td>
+                        <td>
+                            <a class="cell-title" th:href="@{'/interviews/' + ${r.interviewId()}}"
+                               th:text="${r.displayName()}">Interview</a>
+                            <span class="cell-sub" th:text="${r.domain()}">Java</span>
+                        </td>
+                        <td class="nowrap">
+                            <span th:text="${r.scheduledAtText()}">date</span>
+                            <span class="cell-sub" th:if="${r.hasReport()}"
+                                  th:text="'report ' + ${r.generatedAtText()}">generated</span>
+                        </td>
+
+                        <!-- A completed interview whose report was never built is a
+                             real state, not a zero. It is shown as pending rather
+                             than dressed up as a score of 0. -->
+                        <td class="td-num">
+                            <strong th:if="${r.hasReport()}" th:text="${r.overallScore()} + '%'">0%</strong>
+                            <span th:unless="${r.hasReport()}" class="hint">&mdash;</span>
+                        </td>
+                        <td>
+                            <span th:if="${r.hasReport()}" class="rec-badge"
+                                  th:classappend="'rec-' + ${r.recommendationKey()}"
+                                  th:text="${#strings.replace(r.recommendation(), '_', ' ')}">RECOMMENDED</span>
+                            <span th:unless="${r.hasReport()}" class="badge">Report pending</span>
+                            <!-- An observation flag, never an accusation: it means a
+                                 human should look, and it never reduced a score. -->
+                            <span th:if="${r.integrityFlag()}" class="badge badge-warning"
+                                  title="A proctoring observation was flagged for human review. It did not reduce the scores."
+                                  style="margin-left:6px">Review</span>
+                        </td>
+                        <!-- The human decision, kept in its own column rather than
+                             folded into Recommendation: they are different things and
+                             the whole design depends on nobody confusing them. -->
+                        <td>
+                            <span th:if="${decidedSessions.contains(r.sessionId())}"
+                                  class="badge badge-success">Decided</span>
+                            <span th:unless="${decidedSessions.contains(r.sessionId())}"
+                                  class="hint" th:title="${r.hasReport()}
+                                      ? 'Scored, but nobody has said what happens next'
+                                      : 'No report yet'">&mdash;</span>
+                        </td>
+                        <td th:if="${isAdmin}" th:text="${r.recruiterName()}">Recruiter</td>
+                        <td class="td-actions">
+                            <span class="row-actions" th:if="${r.hasReport()}">
+                                <a th:href="@{'/reports/' + ${r.sessionId()}}">Open</a>
+                                <span class="menu">
+                                    <button type="button" class="menu-button" data-menu
+                                            aria-haspopup="true" aria-expanded="false"
+                                            th:attr="aria-label='More report actions for ' + ${r.candidateName()}">&hellip;</button>
+                                    <span class="menu-list" hidden>
+                                        <a th:href="@{'/reports/' + ${r.sessionId()}}">Open report</a>
+                                        <a th:href="@{'/reports/' + ${r.sessionId()} + '/export.pdf'}">Download PDF</a>
+                                        <span class="menu-sep"></span>
+                                        <a th:href="@{'/interviews/' + ${r.interviewId()}}">Interview details</a>
+                                    </span>
+                                </span>
+                            </span>
+                            <a th:unless="${r.hasReport()}"
+                               th:href="@{'/interviews/' + ${r.interviewId()}}">Investigate</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pager" th:if="${result.totalElements() > 0}">
+                <span>
+                    Showing <strong th:text="${result.firstItem()}">1</strong>&ndash;<strong
+                        th:text="${result.lastItem()}">20</strong>
+                    of <strong th:text="${result.totalElements()}">0</strong>
+                </span>
+                <span class="pager-controls">
+                    <a class="btn btn-secondary btn-sm" th:if="${result.hasPrevious()}"
+                       th:href="${listBase} + '&page=' + ${result.page() - 1}">Previous</a>
+                    <span>
+                        Page <strong th:text="${result.page() + 1}">1</strong>
+                        of <strong th:text="${result.totalPages()}">1</strong>
+                    </span>
+                    <a class="btn btn-secondary btn-sm" th:if="${result.hasNext()}"
+                       th:href="${listBase} + '&page=' + ${result.page() + 1}">Next</a>
+                </span>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

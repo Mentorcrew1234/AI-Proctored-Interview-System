@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Review Bulk Upload')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('bulk')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Review bulk upload')}"></div>
+
+    <main class="page">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a th:href="@{/scheduling/bulk}">Bulk schedule</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page">Review</span>
+        </nav>
+
+        <div class="page-head">
+            <div>
+                <h1>Review before scheduling</h1>
+                <p class="subtitle" th:text="${summary.fileName()}">file.xlsx</p>
+            </div>
+        </div>
+
+        <nav class="steps" aria-label="Bulk scheduling progress">
+            <span class="step done"><span class="step-n">&check;</span> Download template</span>
+            <span class="step done"><span class="step-n">&check;</span> Fill it in</span>
+            <span class="step done"><span class="step-n">&check;</span> Upload &amp; check</span>
+            <span class="step" aria-current="step"><span class="step-n">4</span> Confirm</span>
+        </nav>
+
+        <div class="alert alert-info">
+            <strong>Nothing has been scheduled yet.</strong> These are the results of checking
+            your file. No interview record exists until you confirm at the bottom of this page,
+            and the file is re-checked on the server at that point.
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Rows in file</div>
+                <div class="stat-value" th:text="${summary.totalRows()}">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Ready to schedule</div>
+                <div class="stat-value is-success" th:text="${summary.validRows()}">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Need correction</div>
+                <div class="stat-value" th:classappend="${summary.invalidRows() > 0} ? 'is-danger'"
+                     th:text="${summary.invalidRows()}">0</div>
+            </div>
+        </div>
+
+        <!-- ---- confirmation first: it is why this page exists ------------- -->
+        <section class="card" th:if="${summary.hasSchedulableRows()}">
+            <h3>Confirm</h3>
+            <p>
+                This creates <strong th:text="${summary.validRows()}">0</strong> interview
+                record(s), each with its own invite link, exactly as if you had scheduled them
+                one by one.
+                <span th:if="${summary.invalidRows() > 0}">
+                    The <strong th:text="${summary.invalidRows()}">0</strong> row(s) with problems
+                    are skipped and can be corrected and re-uploaded.
+                </span>
+            </p>
+
+            <form th:action="@{/scheduling/bulk/confirm}" method="post" data-submit-once>
+                <input type="hidden" name="batchId" th:value="${batchId}">
+                <div class="form-actions" style="margin-top:0;padding-top:0;border-top:none">
+                    <button type="submit" data-busy-label="Scheduling..."
+                            th:attr="data-confirm='Schedule ' + ${summary.validRows()} + ' interviews? This creates the interview records.'">
+                        Confirm &amp; schedule <span th:text="${summary.validRows()}">0</span>
+                    </button>
+                    <a class="btn btn-secondary" th:href="@{/scheduling/bulk}">Upload a different file</a>
+                </div>
+            </form>
+        </section>
+
+        <div class="card" th:unless="${summary.hasSchedulableRows()}">
+            <div class="alert alert-error">
+                None of the rows in this file can be scheduled. Correct the problems below and
+                upload again. Nothing was created.
+            </div>
+            <a class="btn" th:href="@{/scheduling/bulk}">Back to upload</a>
+        </div>
+
+        <!-- ---- problems: they need action, so they come before the preview -->
+        <section class="card card-flush" th:unless="${#lists.isEmpty(summary.invalidRowList())}">
+            <div class="card-head">
+                <h3>Rows that need correction
+                    <span class="badge badge-danger" th:text="${summary.invalidRows()}">0</span>
+                </h3>
+                <a class="btn btn-secondary btn-sm"
+                   th:href="@{'/scheduling/bulk/errors/' + ${batchId}}">Download error report</a>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Excel row</th>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Problem</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${summary.invalidRowList()}">
+                        <td th:text="${row.excelRowNumber()}">0</td>
+                        <td>
+                            <span class="cell-title"
+                                  th:text="${#strings.isEmpty(row.candidateName())} ? '(no name)' : ${row.candidateName()}">name</span>
+                            <span class="cell-sub" th:text="${row.candidateEmail()}">email</span>
+                        </td>
+                        <td>
+                            <div th:each="err : ${row.errors()}">
+                                <strong th:text="${err.field()}">Field</strong>:
+                                <span th:text="${err.message()}">problem</span>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ---- what will be created ---- -->
+        <section class="card card-flush" th:if="${summary.hasSchedulableRows()}">
+            <div class="card-head">
+                <h3>Will be scheduled
+                    <span class="badge badge-success" th:text="${summary.validRows()}">0</span>
+                </h3>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Row</th>
+                        <th scope="col">Interview</th>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Scheduled</th>
+                        <th scope="col">Domain</th>
+                        <th scope="col">Experience</th>
+                        <th scope="col" class="td-num">Questions</th>
+                        <th scope="col">Account</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${summary.validRowList()}">
+                        <td th:text="${row.excelRowNumber()}">0</td>
+                        <td th:text="${row.interviewName()}">Interview name</td>
+                        <td>
+                            <span class="cell-title" th:text="${row.candidateName()}">name</span>
+                            <span class="cell-sub" th:text="${row.candidateEmail()}">email</span>
+                        </td>
+                        <td class="nowrap" th:text="${row.scheduledAtText()}">date</td>
+                        <td th:text="${row.domain()}">Java</td>
+                        <td th:text="${row.experienceText()}">Fresher</td>
+                        <td class="td-num" th:text="${row.questionCount()}">5</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${row.candidateExists()} ? 'badge-completed' : 'badge-scheduled'"
+                                  th:text="${row.candidateExists()} ? 'Existing' : 'Will be created'">Existing</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

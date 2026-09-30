@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<!--
+  Shown whenever no mapping matches the requested URL.
+
+  Spring Boot's DefaultErrorViewResolver looks for error/{status} before
+  error/{series}, so this file is picked up for a 404 with no controller or
+  configuration change - there is nothing to register.
+
+  Deliberately standalone rather than inside the application shell: this page is
+  reachable while signed out (a mistyped URL, a stale bookmark, a shared link),
+  and the sidebar fragment reads the authenticated principal. Rendering it for
+  an anonymous visitor would turn a tidy 404 into a 500.
+
+  The single action points at "/", which already routes correctly for everyone:
+  an admin lands on their dashboard, a recruiter on theirs, a candidate on their
+  interviews, and a signed-out visitor is sent to the login page.
+-->
+<head th:replace="~{fragments/layout :: head('Page Not Found')}"></head>
+<body>
+<main class="login-wrap">
+    <div class="login-card" style="max-width:440px;text-align:center">
+
+        <div class="login-brand" style="justify-content:center">
+            <span class="sidebar-mark" aria-hidden="true">AI</span>
+            <span class="sidebar-brand-text" style="text-align:left">
+                Proctored Interviews
+                <small>AI interview platform</small>
+            </span>
+        </div>
+
+        <p class="stat-label" style="letter-spacing:.12em">Error 404</p>
+        <h1 style="font-size:28px;margin:4px 0 8px">Page not found</h1>
+
+        <p class="muted">
+            There is nothing at this address. The link may be out of date, or the
+            page may have been renamed.
+        </p>
+
+        <!-- The path is echoed so a mistyped URL is obvious at a glance. It is
+             escaped by th:text, so a crafted URL cannot inject markup here. -->
+        <p class="hint" th:if="${path}" style="margin-top:12px">
+            Requested: <code th:text="${path}">/somewhere</code>
+        </p>
+
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:24px">
+            <a class="btn" th:href="@{/}" sec:authorize="isAuthenticated()">Back to the app</a>
+            <a class="btn" th:href="@{/login}" sec:authorize="!isAuthenticated()">Go to sign in</a>
+        </div>
+
+        <p class="hint" sec:authorize="isAuthenticated()" style="margin-top:18px">
+            If you followed a link from inside the application, the interview or report it
+            pointed to may have been deleted.
+        </p>
+    </div>
+</main>
+</body>
+</html>

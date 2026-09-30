@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Edit Interview')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('interviews')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Edit interview')}"></div>
+
+    <!--
+      The same four sections as the scheduling form, with the candidate shown
+      read-only: reassigning a candidate is a reschedule, not an edit, so this
+      form deliberately cannot do it. Only a SCHEDULED interview reaches here;
+      the controller sends anything else to interview/unavailable, and
+      InterviewService.update re-checks regardless of what was rendered.
+    -->
+    <main class="page page-narrow">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/interviews}">Interviews</a>
+            <a sec:authorize="hasRole('RECRUITER')" th:href="@{/recruiter/interviews}">Interviews</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <a th:href="@{${cancelHref}}" th:text="${candidateName}">Interview</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page">Edit</span>
+        </nav>
+
+        <div class="page-head">
+            <div>
+                <h1>Edit interview</h1>
+                <p class="subtitle">
+                    Only an interview that has not started can be edited &mdash; once a candidate
+                    begins, its questions have already been generated against these settings.
+                    Fields marked <span class="req">*</span> are required.
+                </p>
+            </div>
+        </div>
+
+        <div class="alert alert-error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+        <form th:action="@{${actionUrl}}" th:object="${form}" method="post">
+            <div class="card">
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Interview</h3>
+                    </div>
+                    <div class="field">
+                        <label for="interviewName">Interview name <span class="req">*</span></label>
+                        <input type="text" id="interviewName" th:field="*{interviewName}"
+                               placeholder="e.g. Java Developer - Campus Drive 2026" maxlength="150">
+                        <div class="hint">
+                            What you call this drive or assessment. Many interviews can share one name.
+                        </div>
+                        <div class="alert alert-error" th:if="${#fields.hasErrors('interviewName')}"
+                             th:errors="*{interviewName}"></div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Candidate</h3>
+                        <p>The candidate cannot be changed here. Assigning a different person is a
+                           new interview, not an edit of this one.</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="candidateDisplay">Candidate</label>
+                        <input type="text" id="candidateDisplay" disabled
+                               th:value="${candidateName} + ' (' + ${candidateEmail} + ')'">
+                        <!-- Still bound, so validation and persistence behave exactly as
+                             they do when scheduling. -->
+                        <input type="hidden" th:field="*{candidateId}">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="candidateType">Candidate type <span class="req">*</span></label>
+                            <select id="candidateType" th:field="*{candidateType}">
+                                <option value="FRESHER">Fresher</option>
+                                <option value="EXPERIENCED">Experienced</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="experienceYears">Years of experience <span class="opt">(required if experienced)</span></label>
+                            <input type="number" id="experienceYears" min="0" max="50"
+                                   th:field="*{experienceYears}" placeholder="Leave blank for a fresher">
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('experienceYears')}"
+                                 th:errors="*{experienceYears}"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Configuration</h3>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="domain">Domain <span class="req">*</span></label>
+                            <!-- An input with a datalist, not a select: any topic or
+                                 stack can be typed. The AI generator takes the domain
+                                 straight into the prompt, so it was only ever the
+                                 offline bank that needed a known name - and
+                                 constraining the whole system to the bank's
+                                 vocabulary was the wrong way round. -->
+                            <input type="text" id="domain" list="domain-options"
+                                   th:field="*{domain}" maxlength="80"
+                                   placeholder="e.g. Java, React, Rust and WebAssembly"
+                                   autocomplete="off">
+                            <datalist id="domain-options">
+                                <option th:each="d : ${domains}" th:value="${d}"></option>
+                            </datalist>
+                            <div class="hint">
+                                Type any topic or stack &mdash; combinations are fine.
+                                <span th:if="${bankedDomains != null}">
+                                    With AI generation on, questions are written for whatever
+                                    you enter. If the AI is unavailable the interview falls back
+                                    to the built-in bank, which has its own questions for
+                                    <span th:text="${#lists.size(bankedDomains)}">0</span> domains
+                                    and a general engineering set for anything else.
+                                </span>
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('domain')}"
+                                 th:errors="*{domain}"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="interviewType">Interview type <span class="req">*</span></label>
+                            <select id="interviewType" th:field="*{interviewType}">
+                                <option value="TECHNICAL">Technical</option>
+                                <option value="HR_GENERAL">HR / General</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="questionCount">Number of questions <span class="req">*</span></label>
+                            <input type="number" id="questionCount" min="1" max="10" th:field="*{questionCount}">
+                            <div class="hint">1&ndash;10. Five is the recommended length.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('questionCount')}"
+                                 th:errors="*{questionCount}"></div>
+                        </div>
+
+
+                        <div class="field">
+                            <label for="questionMode">Question mode</label>
+                            <select id="questionMode" th:field="*{questionMode}">
+                                <!-- Empty binds to null, which means "inherit the
+                                     server default" - a real choice, not a missing
+                                     answer. See Interview.questionMode. -->
+                                <option value=""
+                                        th:text="'Use the server default (' + ${serverQuestionMode.label()} + ')'">
+                                    Use the server default
+                                </option>
+                                <option value="FIXED">Fixed set &mdash; all questions generated up front</option>
+                                <option value="ADAPTIVE">Adaptive &mdash; each question follows the last answer</option>
+                            </select>
+                            <div class="hint">
+                                Adaptive generates the next question from the previous answer's
+                                score, so it can take a little longer between questions. Fixed is
+                                the more heavily verified path.
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('questionMode')}"
+                                 th:errors="*{questionMode}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="durationMinutes">Test duration (minutes) <span class="req">*</span></label>
+                            <input type="number" id="durationMinutes" min="1" max="180"
+                                   th:field="*{durationMinutes}">
+                            <div class="hint">
+                                1&ndash;180. The clock starts when the candidate begins, not at the
+                                scheduled time, so arriving late costs them nothing.
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('durationMinutes')}"
+                                 th:errors="*{durationMinutes}"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="language">Language</label>
+                            <input type="text" id="language" value="English" disabled>
+                            <div class="hint">English only in this prototype.</div>
+                        </div>
+
+                        <div class="field field-full">
+                            <label for="scheduledAt">Date and time <span class="req">*</span></label>
+                            <input type="datetime-local" id="scheduledAt" th:field="*{scheduledAt}">
+                            <div class="hint">Must be in the future.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('scheduledAt')}"
+                                 th:errors="*{scheduledAt}"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Result visibility</h3>
+                    </div>
+                    <label class="check">
+                        <input type="checkbox" th:field="*{resultVisibleToCandidate}">
+                        Let the candidate see their result after the interview
+                    </label>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit">Save changes</button>
+                    <a class="btn btn-secondary" th:href="@{${cancelHref}}">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+</body>
+</html>

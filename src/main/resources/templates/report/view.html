@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Interview Report')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('reports')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Interview report')}"></div>
+
+    <!--
+      The report, in three sections rather than one long document: the outcome,
+      the proctoring observations, and the answers question by question.
+
+      Printing overrides the tabs (see the @media print block in app.css) so a
+      printed or PDF-saved report is still the complete document - the tabs are
+      a reading aid on screen, never a way of omitting anything from the record.
+    -->
+    <main class="page report">
+
+        <div class="page-head">
+            <div>
+                <h1 th:text="${report.candidateName()}">Candidate</h1>
+                <p class="subtitle">
+                    <span th:text="${report.candidateEmail()}">email</span>
+                    &middot; <span th:text="${report.domain()}">Java</span>
+                    &middot; <span th:text="${report.scheduledAtText()}">date</span>
+                </p>
+            </div>
+            <div class="page-actions no-print">
+                <a class="btn btn-secondary"
+                   th:href="@{'/reports/' + ${report.sessionId()} + '/export.pdf'}">Download PDF</a>
+                <button type="button" class="btn btn-secondary" onclick="window.print()">Print</button>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <!-- ---- the outcome, always visible ------------------------------- -->
+        <section class="card overall-card">
+            <div>
+                <div class="stat-label">Overall score</div>
+                <div class="overall-value" th:text="${report.overallScore()} + '%'">0%</div>
+                <div class="hint" style="margin-top:2px"
+                     th:text="${report.answeredCount()} + ' of ' + ${report.totalQuestions()} + ' questions answered'">
+                    5 of 5 answered
+                </div>
+            </div>
+            <div style="text-align:right">
+                <div class="stat-label">Recommendation</div>
+                <span class="rec-badge"
+                      th:classappend="'rec-' + ${#strings.toLowerCase(report.recommendation())}"
+                      th:text="${#strings.replace(report.recommendation(), '_', ' ')}">RECOMMENDED</span>
+                <div class="hint" style="margin-top:6px">Advisory input for a human decision</div>
+            </div>
+        </section>
+
+        <div data-tabs>
+            <div class="tabs" role="tablist" aria-label="Report sections">
+                <button type="button" class="tab" role="tab" id="tab-summary"
+                        aria-controls="panel-summary">Summary</button>
+                <button type="button" class="tab" role="tab" id="tab-proctoring"
+                        aria-controls="panel-proctoring">
+                    Proctoring
+                    <span class="count" th:text="${#lists.size(report.observationCounts())}">0</span>
+                </button>
+                <button type="button" class="tab" role="tab" id="tab-answers"
+                        aria-controls="panel-answers">
+                    Answers
+                    <span class="count" th:text="${#lists.size(report.questionResults())}">0</span>
+                </button>
+                <!-- Staff only. A candidate never sees that this exists. -->
+                <button type="button" class="tab" role="tab" id="tab-decision"
+                        th:if="${canReview}" aria-controls="panel-decision">
+                    Decision
+                    <span class="count" th:if="${review.decided()}"
+                          th:text="${review.current().decisionLabel()}">Advanced</span>
+                </button>
+            </div>
+
+            <!-- ---- summary --------------------------------------------- -->
+            <div class="tabpanel" role="tabpanel" id="panel-summary"
+                 aria-labelledby="tab-summary" tabindex="0">
+
+                <section class="card">
+                    <h3>Scores</h3>
+                    <div class="score-grid">
+                        <div class="score">
+                            <div class="stat-label">Technical</div>
+                            <div class="score-value" th:text="${report.technicalScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${report.technicalScore()} + '%'"></span></div>
+                        </div>
+                        <div class="score">
+                            <div class="stat-label">Problem solving</div>
+                            <div class="score-value" th:text="${report.problemSolvingScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${report.problemSolvingScore()} + '%'"></span></div>
+                        </div>
+                        <div class="score">
+                            <div class="stat-label">Communication</div>
+                            <div class="score-value" th:text="${report.communicationScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${report.communicationScore()} + '%'"></span></div>
+                        </div>
+                        <div class="score">
+                            <div class="stat-label">Relevance</div>
+                            <div class="score-value" th:text="${report.relevanceScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${report.relevanceScore()} + '%'"></span></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h3>How this was decided</h3>
+                    <p th:text="${report.explanation()}">explanation</p>
+                    <p class="hint">
+                        The recommendation comes from fixed, configurable thresholds applied to the
+                        four scores above &mdash; deterministic arithmetic in the application, not a
+                        decision by the AI. The language model contributes the sub-scores only.
+                    </p>
+                </section>
+
+                <section class="card">
+                    <h3>Interview</h3>
+                    <div class="meta-grid">
+                        <span>Domain</span><strong th:text="${report.domain()}">Java</strong>
+                        <span>Interview type</span>
+                        <strong th:text="${report.interviewType().name() == 'TECHNICAL'} ? 'Technical' : 'HR / General'">Technical</strong>
+                        <span>Candidate type</span>
+                        <strong>
+                            <span th:text="${#strings.capitalize(#strings.toLowerCase(report.candidateType()))}">Fresher</span>
+                            <span th:if="${report.experienceYears() != null}"
+                                  th:text="'(' + ${report.experienceYears()} + ' yrs)'"></span>
+                        </strong>
+                        <span>Recruiter</span><strong th:text="${report.recruiterName()}">Recruiter</strong>
+                        <span>Scheduled</span><strong th:text="${report.scheduledAtText()}">date</strong>
+                        <span>Allocated</span><strong th:text="${report.timing().allocatedText()}">30 minutes</strong>
+            <span>Session length</span><strong th:text="${report.durationText()}">-</strong>
+            <span>Completion</span>
+            <strong th:text="${report.timing().completionText()}">Candidate finished</strong>
+                        <span>Questions answered</span>
+                        <strong th:text="${report.answeredCount()} + ' of ' + ${report.totalQuestions()}">5 of 5</strong>
+                        <span>Generated</span><strong th:text="${report.generatedAt()}">time</strong>
+                    </div>
+
+                    <div class="alert alert-warning" style="margin-top:16px" th:if="${!report.aiEvaluated()}">
+                        <strong>Not fully AI-evaluated.</strong> Some or all answers were graded by
+                        the offline fallback scorer rather than a language model. That scorer
+                        measures keyword coverage and answer structure, not meaning, so treat these
+                        scores as indicative only.
+                    </div>
+                </section>
+
+                <!-- ---- interview timing ----------------------------------
+                     Every figure here is derived from timestamps the system
+                     already recorded. Nothing is scored or inferred, and
+                     running over the allocated time is stated as a fact, not
+                     flagged as a problem. -->
+                <section class="card" th:with="t=${report.timing()}">
+                    <h3>Interview timing</h3>
+                    <div class="meta-grid">
+                        <span>Allocated duration</span>
+                        <strong th:text="${t.allocatedText()}">30 minutes</strong>
+
+                        <span>Actual duration</span>
+                        <strong th:text="${t.actualText()}">23 min 41 s</strong>
+
+                        <span>Completion</span>
+                        <strong th:text="${t.completionText()}">Candidate finished</strong>
+
+                        <span>Questions answered</span>
+                        <strong th:text="${t.answeredCount()} + ' / ' + ${t.totalQuestions()}">8 / 10</strong>
+
+                        <th:block th:if="${t.unansweredCount() > 0}">
+                            <span>Unanswered</span>
+                            <strong th:text="${t.unansweredCount()}">2</strong>
+                        </th:block>
+
+                        <!-- Only shown when something was actually answered: an
+                             average of no answers is not zero, it is nothing. -->
+                        <th:block th:if="${t.averageAnswerText() != null}">
+                            <span>Average per answer</span>
+                            <strong th:text="${t.averageAnswerText()}">2 min 57 s</strong>
+
+                            <span>Longest answer</span>
+                            <strong th:text="${t.longestAnswerText()}">4 min 12 s</strong>
+
+                            <span>Shortest answer</span>
+                            <strong th:text="${t.shortestAnswerText()}">38 s</strong>
+                        </th:block>
+                    </div>
+
+                    <p class="hint" th:if="${t.completionReason() != null
+                                            and t.completionReason().name() == 'TIME_EXPIRED'}">
+                        The allocated time ran out. Answers submitted before then were kept;
+                        any remaining questions count as unanswered, exactly as they would if
+                        the candidate had finished without attempting them.
+                    </p>
+                    <p class="hint" th:if="${t.averageAnswerText() != null}">
+                        Per-answer times are measured from the candidate's browser and cover the
+                        time spent on the answering screen.
+                    </p>
+                </section>
+            </div>
+
+            <!-- ---- proctoring ------------------------------------------- -->
+            <div class="tabpanel" role="tabpanel" id="panel-proctoring"
+                 aria-labelledby="tab-proctoring" tabindex="0" hidden>
+
+                <section class="card">
+                    <div class="alert alert-info">
+                        <strong>These are observations, not proof of misconduct.</strong>
+                        They come from automated detection running in the candidate's browser, which
+                        can be wrong &mdash; a family member walking past, a dark object mistaken for
+                        a phone, or poor lighting can all produce an observation. They are provided
+                        so a human can judge whether anything here matters.
+                    </div>
+
+                    <!-- Monitoring coverage: what the OBSERVER managed to do.
+                         Shown above the observations, and above the empty state,
+                         because it decides how either should be read. It is not
+                         a statement about the candidate and it has not changed
+                         their scores. -->
+                    <div th:if="${report.monitoringCoverage().name() == 'INCOMPLETE'}"
+                         class="alert alert-warning">
+                        <strong>Monitoring did not cover the whole interview.</strong>
+                        <span th:if="${report.monitoringDroppedEvents() > 0}">
+                            <span th:text="${report.monitoringDroppedEvents()}">0</span>
+                            observation(s) were recorded in the browser but never reached the server.
+                        </span>
+                        <span th:if="${report.monitoringNote() != null}"
+                              th:text="'The browser reported: ' + ${report.monitoringNote()} + '.'">note</span>
+                        Anything listed below is therefore an incomplete record, and the absence of an
+                        observation is <strong>not</strong> evidence that nothing happened. This has not
+                        affected the scores or the recommendation &mdash; it is a failure of the
+                        monitoring, not of the candidate.
+                    </div>
+
+                    <div th:if="${report.monitoringCoverage().name() == 'NOT_RECORDED'}"
+                         class="alert alert-info">
+                        <strong>Monitoring coverage was not recorded for this interview.</strong>
+                        This session predates coverage recording, so whether monitoring ran throughout
+                        is genuinely unknown. The observations below cannot be confirmed as a complete
+                        record either way.
+                    </div>
+
+                    <div class="empty" th:if="${#lists.isEmpty(report.observationCounts())}">
+                        <div class="empty-title"
+                             th:text="${report.monitoringCoverage().name() == 'NONE_OBSERVED'}
+                                      ? 'No observations recorded'
+                                      : 'No observations reached the server'">No observations recorded</div>
+                        <p style="margin-bottom:0"
+                           th:if="${report.monitoringCoverage().name() == 'NONE_OBSERVED'}">
+                            Monitoring ran for this interview and nothing was detected that met the
+                            thresholds for recording an observation.
+                        </p>
+                        <p style="margin-bottom:0" th:unless="${report.monitoringCoverage().name() == 'NONE_OBSERVED'}">
+                            This does not mean nothing was detected &mdash; see the note above. Read it
+                            as "not observed", not as "observed and clear".
+                        </p>
+                    </div>
+
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(report.observationCounts())}">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th scope="col">Observation</th>
+                                <th scope="col" class="td-num">Times</th>
+                                <th scope="col" class="td-num">Total duration</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="c : ${report.observationCounts()}">
+                                <td th:text="${#strings.replace(c.type(), '_', ' ')}">TYPE</td>
+                                <td class="td-num" th:text="${c.count()}">0</td>
+                                <td class="td-num"
+                                    th:text="${c.totalDurationMs() > 0}
+                                             ? ${#numbers.formatDecimal(c.totalDurationMs() / 1000.0, 1, 1)} + ' s' : '-'">-</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div th:if="${report.integrityFlag()}" class="alert alert-warning" style="margin-top:16px">
+                        One or more observations were of a type flagged for human review. The scores
+                        were <strong>not</strong> reduced because of them &mdash; at most the
+                        recommendation was held at "further review" so a person would look.
+                    </div>
+                </section>
+
+                <section class="card" th:unless="${#lists.isEmpty(report.observationTimeline())}">
+                    <h3>Timeline</h3>
+                    <p class="hint" style="margin-bottom:12px">
+                        Each row is a completed, debounced observation. Video never left the
+                        candidate's browser &mdash; only these entries were uploaded.
+                    </p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th scope="col">Time</th>
+                                <th scope="col">Observation</th>
+                                <th scope="col">Duration</th>
+                                <th scope="col">Confidence</th>
+                                <th scope="col">Details</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="o : ${report.observationTimeline()}">
+                                <td class="nowrap" th:text="${o.startTimeText()}">00:00:00</td>
+                                <td th:text="${#strings.replace(o.type(), '_', ' ')}">TYPE</td>
+                                <td th:text="${o.durationText()}">-</td>
+                                <td th:text="${o.confidence() != null} ? ${o.confidence()} : '-'">-</td>
+                                <td class="hint" th:text="${#lists.isEmpty(o.details())} ? '-' : ${o.details()}">-</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ---- answers ---------------------------------------------- -->
+            <div class="tabpanel" role="tabpanel" id="panel-answers"
+                 aria-labelledby="tab-answers" tabindex="0" hidden>
+
+                <section class="card" th:each="q : ${report.questionResults()}">
+                    <div class="q-head">
+                        <h3 th:text="'Q' + ${q.sequenceNo()} + '. ' + ${q.questionText()}">Question</h3>
+                        <span class="badge" th:text="${q.difficulty()}">MEDIUM</span>
+                    </div>
+
+                    <div th:if="${!q.answered()}" class="alert alert-warning" style="margin:0">
+                        Not answered. This question counts as zero in the overall score &mdash; the
+                        divisor is the number of questions asked, so skipping never beats attempting.
+                    </div>
+
+                    <div th:if="${q.answered()}">
+                        <div class="score-row">
+                            <span>Technical <strong th:text="${q.technicalScore()}">0</strong></span>
+                            <span>Problem solving <strong th:text="${q.problemSolvingScore()}">0</strong></span>
+                            <span>Communication <strong th:text="${q.communicationScore()}">0</strong></span>
+                            <span>Relevance <strong th:text="${q.relevanceScore()}">0</strong></span>
+                            <span>Overall <strong th:text="${q.overallScore()}">0</strong></span>
+                        </div>
+
+                        <h4>Answer</h4>
+                        <p class="transcript" th:text="${q.cleanTranscript()}">clean transcript</p>
+                        <p class="hint">
+                            <span th:text="${q.wordCount()} + ' words'">0 words</span> &middot;
+                            <span th:text="${q.fillerCount()} + ' filler words removed'">0 fillers</span> &middot;
+                            <span th:text="${q.durationSeconds()} + ' seconds taken'">0 s</span>
+                        </p>
+
+                        <!-- The raw transcript is never modified; both are stored. -->
+                        <details class="disclose" style="margin-bottom:12px">
+                            <summary>Show the original transcript before cleaning</summary>
+                            <p class="transcript raw" style="margin-top:8px"
+                               th:text="${q.rawTranscript()}">raw transcript</p>
+                        </details>
+
+                        <h4>Feedback</h4>
+                        <p th:text="${q.feedback()}">feedback</p>
+
+                        <div class="cols-2">
+                            <div th:unless="${#lists.isEmpty(q.strengths())}">
+                                <h4>Strengths</h4>
+                                <ul style="margin:0;padding-left:18px">
+                                    <li th:each="s : ${q.strengths()}" th:text="${s}">strength</li>
+                                </ul>
+                            </div>
+                            <div th:unless="${#lists.isEmpty(q.weaknesses())}">
+                                <h4>Areas to improve</h4>
+                                <ul style="margin:0;padding-left:18px">
+                                    <li th:each="w : ${q.weaknesses()}" th:text="${w}">weakness</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <p class="hint" style="margin-top:12px">
+                            Graded by
+                            <strong th:text="${q.evaluator().name() == 'LLM'}
+                                             ? 'language model' : 'offline fallback scorer'">evaluator</strong>
+                            (<span th:text="${q.modelName()}">model</span>)
+                        </p>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ---- decision ---------------------------------------------
+                 The human decision the rest of this page defers to.
+
+                 Everything above is advisory by construction: the model
+                 supplies sub-scores, fixed thresholds turn them into a
+                 recommendation, and proctoring can only ever hold a result for
+                 review. This panel is the one place a person's own judgement is
+                 recorded, and it never alters anything above it.
+
+                 Staff only, with no flag to change that - see
+                 ReportReviewService.
+            -->
+            <div class="tabpanel" role="tabpanel" id="panel-decision" th:if="${canReview}"
+                 aria-labelledby="tab-decision" tabindex="0" hidden>
+
+                <section class="card">
+                    <div class="alert alert-info">
+                        <strong>This is the decision, and it is yours.</strong>
+                        The score and recommendation above are advisory input produced by
+                        fixed thresholds &mdash; they are not a hiring decision and nothing
+                        you record here changes them. What you enter is kept separately and
+                        is <strong>never shown to the candidate</strong>.
+                    </div>
+
+                    <div th:if="${review.decided()}" class="meta-grid" style="margin-bottom:18px">
+                        <span>Current decision</span>
+                        <strong th:text="${review.current().decisionLabel()}">Advanced</strong>
+                        <span>Decided by</span>
+                        <strong th:text="${review.current().reviewerName()}">Someone</strong>
+                        <span>When</span>
+                        <strong th:text="${review.current().decidedAtText()}">date</strong>
+                        <span>Against the model</span>
+                        <strong th:text="${review.current().agreesWithModel()}
+                                         ? 'Agrees with the recommendation'
+                                         : 'Differs from the recommendation'">Agrees</strong>
+                        <!-- The reason for the decision that STANDS. Without this it
+                             only appeared once it had been superseded, which is
+                             precisely backwards. -->
+                        <span>Reason</span>
+                        <strong th:text="${review.current().note()} ?: 'None given'">-</strong>
+                    </div>
+
+                    <div th:unless="${review.decided()}" class="empty" style="margin-bottom:18px">
+                        <div class="empty-title">No decision recorded yet</div>
+                        <p style="margin-bottom:0">
+                            The interview has been scored, but nobody has said what should
+                            happen next.
+                        </p>
+                    </div>
+
+                    <form th:action="@{'/reports/' + ${report.sessionId()} + '/review'}" method="post">
+                        <div class="field">
+                            <label for="decision">Decision</label>
+                            <select id="decision" name="decision" required>
+                                <option value="">-- choose --</option>
+                                <!-- Deliberately different words from the model's
+                                     RECOMMENDED / FURTHER_REVIEW / NOT_RECOMMENDED, so the
+                                     two can never be confused at a glance. -->
+                                <option value="ADVANCED">Advanced &mdash; take this candidate forward</option>
+                                <option value="ON_HOLD">On hold &mdash; not decided yet</option>
+                                <option value="DECLINED">Declined &mdash; do not take forward</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="note">Reason (optional)</label>
+                            <textarea id="note" name="note" rows="3"
+                                      placeholder="Why, in your own words. Useful to whoever reads this next."></textarea>
+                        </div>
+                        <button type="submit"
+                                th:text="${review.decided()} ? 'Record a new decision' : 'Record decision'">
+                            Record decision
+                        </button>
+                        <p class="hint" style="margin-top:10px" th:if="${review.decided()}">
+                            The earlier decision is kept rather than replaced, so the change
+                            stays visible below.
+                        </p>
+                    </form>
+                </section>
+
+                <section class="card" th:if="${review.revised()}">
+                    <h3>Earlier decisions</h3>
+                    <p class="hint" style="margin-bottom:12px">
+                        A decision that was later changed. Kept because a judgement about a
+                        person that silently changed would be the wrong thing to lose.
+                    </p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th scope="col">Decision</th>
+                                <th scope="col">By</th>
+                                <th scope="col">When</th>
+                                <th scope="col">Reason</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- th:each on the row itself: no th:replace here, so the
+                                 precedence trap documented in CLAUDE.md does not apply. -->
+                            <tr th:each="r : ${review.history()}">
+                                <td th:text="${r.decisionLabel()}">Advanced</td>
+                                <td th:text="${r.reviewerName()}">Someone</td>
+                                <td th:text="${r.decidedAtText()}">date</td>
+                                <td th:text="${r.note()} ?: '-'">-</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <p class="hint" style="margin-top:16px">
+            Report generated <span th:text="${report.generatedAt()}">time</span> &middot;
+            session #<span th:text="${report.sessionId()}">0</span>
+        </p>
+    </main>
+</div>
+</body>
+</html>

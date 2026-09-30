@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Schedule for Several Candidates')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('schedule')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Schedule for several candidates')}"></div>
+
+    <!--
+      The single-schedule form with one field changed: a multi-select of
+      candidates instead of one. Everything else - name, date, domain, type,
+      question count, visibility - is shared by every interview it creates.
+
+      Shared by both staff roles through
+      InterviewManagementController.multiScheduleForm, which passes the action
+      and cancel URLs, so the admin and recruiter versions cannot drift apart.
+
+      Each candidate is created through the same InterviewService.create the
+      single form uses, in its own transaction, so one refusal never discards
+      the interviews already created for the others - and this path can never
+      produce a record the single form would have rejected.
+    -->
+    <main class="page page-narrow">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a th:href="@{${cancelHref}}">Interviews</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page">Several candidates</span>
+        </nav>
+
+        <div class="page-head">
+            <div>
+                <h1>Schedule for several candidates</h1>
+                <p class="subtitle">
+                    Creates one interview per candidate, all on the same terms and all with
+                    their own invite link. Fields marked <span class="req">*</span> are required.
+                </p>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/layout :: scheduleTabs('multi')}"></div>
+
+        <div class="alert alert-error" role="alert" th:if="${error}" th:text="${error}"></div>
+
+        <form th:action="@{${actionUrl}}" th:object="${form}" method="post">
+            <div class="card">
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Interview</h3>
+                        <p>Every candidate you pick below gets an interview with this name. That is
+                           the point of a shared name &mdash; it is what makes the whole drive
+                           searchable as one group afterwards.</p>
+                    </div>
+                    <div class="field">
+                        <label for="interviewName">Interview name <span class="req">*</span></label>
+                        <input type="text" id="interviewName" th:field="*{interviewName}"
+                               placeholder="e.g. Java Developer - Campus Drive 2026" maxlength="150">
+                        <div class="alert alert-error" th:if="${#fields.hasErrors('interviewName')}"
+                             th:errors="*{interviewName}"></div>
+                    </div>
+                </section>
+
+                <!-- ---- the one field that differs from single scheduling ---- -->
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Candidates</h3>
+                        <p>Hold Ctrl (Cmd on a Mac) to pick more than one, or Shift to pick a
+                           range. Only enabled candidate accounts are listed.</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="candidateIds">
+                            Candidates <span class="req">*</span>
+                            <span class="opt" th:text="'(up to ' + ${maxCandidates} + ')'">(up to 100)</span>
+                        </label>
+                        <!-- ---- pool filter ------------------------------------
+                             Narrows which candidates the picker below offers. It is
+                             NOT part of the submission: no name attribute, so nothing
+                             here reaches the server, and with JavaScript off the whole
+                             block is hidden and the full list is offered exactly as
+                             before. Options are built from the pool itself.
+                        -->
+                        <div class="filters-body" data-pool-filter hidden
+                             style="margin-bottom:12px;border-radius:var(--radius)">
+                            <div class="filter-grid">
+                                <div class="field">
+                                    <label for="poolCollege">College</label>
+                                    <select id="poolCollege" data-pool-key="college">
+                                        <option value="">Any college</option>
+                                        <option th:each="c : ${poolOptions.colleges()}"
+                                                th:value="${c}" th:text="${c}">C</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="poolLocation">Location</label>
+                                    <select id="poolLocation" data-pool-key="location">
+                                        <option value="">Any location</option>
+                                        <option th:each="l : ${poolOptions.locations()}"
+                                                th:value="${l}" th:text="${l}">L</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="poolSkill">Skill</label>
+                                    <select id="poolSkill" data-pool-key="skills">
+                                        <option value="">Any skill</option>
+                                        <option th:each="s : ${poolOptions.skills()}"
+                                                th:value="${s}" th:text="${s}">S</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="poolDomain">Primary domain</label>
+                                    <select id="poolDomain" data-pool-key="domain">
+                                        <option value="">Any domain</option>
+                                        <option th:each="d : ${poolOptions.domains()}"
+                                                th:value="${d}" th:text="${d}">D</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="poolExperience">Experience</label>
+                                    <select id="poolExperience" data-pool-key="experience">
+                                        <option value="">Any experience</option>
+                                        <option value="FRESHER">Fresher</option>
+                                        <option value="EXPERIENCED">Experienced</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:center">
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                        data-pool-clear>Clear pool filters</button>
+                                <span class="hint" style="margin:0" data-pool-count></span>
+                            </div>
+                        </div>
+                        <select id="candidateIds" th:field="*{candidateIds}" multiple size="10"
+                                data-pool-target aria-describedby="candidate-help">
+                            <option th:each="c : ${candidates}" th:value="${c.id()}"
+                                    th:attr="data-college=${c.collegeName()},
+                                             data-location=${c.location()},
+                                             data-skills=${c.skills()},
+                                             data-domain=${c.primaryDomain()},
+                                             data-experience=${c.experienceKey()}"
+                                    th:text="${c.fullName()} + ' - ' + ${c.email()}">Name</option>
+                        </select>
+                        <div class="hint" id="candidate-help">
+                            <span data-selected-count>No candidates selected.</span>
+                            One interview is created per candidate.
+                        </div>
+                        <div class="hint" th:if="${#lists.isEmpty(candidates)}">
+                            No enabled candidate accounts exist yet.
+                            <span sec:authorize="hasRole('ADMIN')">
+                                <a th:href="@{/admin/users/new}">Add one</a>, or use bulk
+                                scheduling, which creates missing accounts as it goes.
+                            </span>
+                            <span sec:authorize="hasRole('RECRUITER')">
+                                Ask an administrator to create one, or use bulk scheduling, which
+                                creates missing accounts as it goes.
+                            </span>
+                        </div>
+                        <div class="alert alert-error" th:if="${#fields.hasErrors('candidateIds')}"
+                             th:errors="*{candidateIds}"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="candidateType">Candidate type <span class="req">*</span></label>
+                            <select id="candidateType" th:field="*{candidateType}">
+                                <option value="FRESHER">Fresher</option>
+                                <option value="EXPERIENCED">Experienced</option>
+                            </select>
+                            <div class="hint">Applied to every selected candidate.</div>
+                        </div>
+                        <div class="field">
+                            <label for="experienceYears">Years of experience <span class="opt">(required if experienced)</span></label>
+                            <input type="number" id="experienceYears" min="0" max="50"
+                                   th:field="*{experienceYears}" placeholder="Leave blank for freshers">
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('experienceYears')}"
+                                 th:errors="*{experienceYears}"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Configuration</h3>
+                        <p>Questions are generated once, when each candidate starts &mdash; not now,
+                           and not shared between them.</p>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="domain">Domain <span class="req">*</span></label>
+                            <!-- An input with a datalist, not a select: any topic or
+                                 stack can be typed. The AI generator takes the domain
+                                 straight into the prompt, so it was only ever the
+                                 offline bank that needed a known name - and
+                                 constraining the whole system to the bank's
+                                 vocabulary was the wrong way round. -->
+                            <input type="text" id="domain" list="domain-options"
+                                   th:field="*{domain}" maxlength="80"
+                                   placeholder="e.g. Java, React, Rust and WebAssembly"
+                                   autocomplete="off">
+                            <datalist id="domain-options">
+                                <option th:each="d : ${domains}" th:value="${d}"></option>
+                            </datalist>
+                            <div class="hint">
+                                Type any topic or stack &mdash; combinations are fine.
+                                <span th:if="${bankedDomains != null}">
+                                    With AI generation on, questions are written for whatever
+                                    you enter. If the AI is unavailable the interview falls back
+                                    to the built-in bank, which has its own questions for
+                                    <span th:text="${#lists.size(bankedDomains)}">0</span> domains
+                                    and a general engineering set for anything else.
+                                </span>
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('domain')}"
+                                 th:errors="*{domain}"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="interviewType">Interview type <span class="req">*</span></label>
+                            <select id="interviewType" th:field="*{interviewType}">
+                                <option value="TECHNICAL">Technical</option>
+                                <option value="HR_GENERAL">HR / General</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="questionCount">Number of questions <span class="req">*</span></label>
+                            <input type="number" id="questionCount" min="1" max="10" th:field="*{questionCount}">
+                            <div class="hint">1&ndash;10. Five is the recommended length.</div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('questionCount')}"
+                                 th:errors="*{questionCount}"></div>
+                        </div>
+
+
+                        <div class="field">
+                            <label for="questionMode">Question mode</label>
+                            <select id="questionMode" th:field="*{questionMode}">
+                                <!-- Empty binds to null, which means "inherit the
+                                     server default" - a real choice, not a missing
+                                     answer. See Interview.questionMode. -->
+                                <option value=""
+                                        th:text="'Use the server default (' + ${serverQuestionMode.label()} + ')'">
+                                    Use the server default
+                                </option>
+                                <option value="FIXED">Fixed set &mdash; all questions generated up front</option>
+                                <option value="ADAPTIVE">Adaptive &mdash; each question follows the last answer</option>
+                            </select>
+                            <div class="hint">
+                                Adaptive generates the next question from the previous answer's
+                                score, so it can take a little longer between questions. Fixed is
+                                the more heavily verified path.
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('questionMode')}"
+                                 th:errors="*{questionMode}"></div>
+                        </div>
+                        <div class="field">
+                            <label for="durationMinutes">Test duration (minutes) <span class="req">*</span></label>
+                            <input type="number" id="durationMinutes" min="1" max="180"
+                                   th:field="*{durationMinutes}">
+                            <div class="hint">
+                                1&ndash;180. The clock starts when the candidate begins, not at the
+                                scheduled time, so arriving late costs them nothing.
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('durationMinutes')}"
+                                 th:errors="*{durationMinutes}"></div>
+                        </div>
+
+                        <div class="field">
+                            <label for="language">Language</label>
+                            <input type="text" id="language" value="English" disabled>
+                            <div class="hint">English only in this prototype.</div>
+                        </div>
+
+                        <div class="field field-full">
+                            <label for="scheduledAt">Date and time <span class="req">*</span></label>
+                            <input type="datetime-local" id="scheduledAt" th:field="*{scheduledAt}">
+                            <div class="hint">
+                                Every selected candidate is scheduled for this same slot. The system
+                                does not check for clashes, so stagger the times yourself if the
+                                same panel is seeing them one after another.
+                            </div>
+                            <div class="alert alert-error" th:if="${#fields.hasErrors('scheduledAt')}"
+                                 th:errors="*{scheduledAt}"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="form-section-head">
+                        <h3>Result visibility</h3>
+                        <p>Applied to every interview created here. You can change it later, one at
+                           a time or in bulk.</p>
+                    </div>
+                    <label class="check">
+                        <input type="checkbox" th:field="*{resultVisibleToCandidate}">
+                        <span>
+                            Let each candidate see their own result after the interview
+                            <span class="hint" style="display:block;margin-top:2px">
+                                A candidate only ever sees their own result, never another's.
+                            </span>
+                        </span>
+                    </label>
+                </section>
+
+                <div class="form-actions">
+                    <button type="submit" data-multi-submit>Schedule interviews</button>
+                    <a class="btn btn-secondary" th:href="@{${cancelHref}}">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+
+<script>
+    // Keeps the count under the multi-select honest, and names what the submit
+    // button is about to do. Progressive: with JavaScript off the form still
+    // submits and the server still creates one interview per selected option.
+    (function () {
+        var select = document.getElementById('candidateIds');
+        var counter = document.querySelector('[data-selected-count]');
+        var submit = document.querySelector('[data-multi-submit]');
+        if (!select || !counter || !submit) {
+            return;
+        }
+
+        function sync() {
+            var n = select.selectedOptions.length;
+            counter.textContent = n === 0
+                ? 'No candidates selected.'
+                : n + (n === 1 ? ' candidate selected.' : ' candidates selected.');
+            submit.textContent = n === 0
+                ? 'Schedule interviews'
+                : 'Schedule ' + n + (n === 1 ? ' interview' : ' interviews');
+        }
+
+        select.addEventListener('change', sync);
+        sync();
+    })();
+</script>
+</body>
+</html>

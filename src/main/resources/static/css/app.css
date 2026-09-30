@@ -1,0 +1,1875 @@
+/* ==========================================================================
+   AI-Based Proctored Interview System - application design system
+
+   One stylesheet for every server-rendered page. Organised as:
+     1. tokens          6. tabs
+     2. reset/base      7. tables
+     3. app shell       8. forms
+     4. page header     9. feedback / badges / empty states
+     5. surfaces       10. page-specific, responsive, print
+
+   Rules this file follows, so it stays consistent as pages are added:
+   - Colour is only ever referenced through a token. No literal hex in a rule
+     below the token block, except the handful of tinted status backgrounds.
+   - Status colour is semantic and identical everywhere: a COMPLETED interview
+     is the same green on a dashboard, a table and a report.
+   - Spacing comes from the --space-* scale so vertical rhythm does not drift.
+   ========================================================================== */
+
+/* ---- 1. tokens --------------------------------------------------------- */
+
+:root {
+    /* neutrals */
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface-alt: #f8fafc;
+    --border: #e2e6ec;
+    --border-strong: #cbd2dc;
+    --text: #17202e;
+    --text-soft: #47536580;
+    --muted: #5c6675;
+
+    /* brand - unchanged from the original theme */
+    --primary: #2f5bd8;
+    --primary-dark: #23459f;
+    --primary-soft: #eef2fe;
+    --primary-ring: rgba(47, 91, 216, .28);
+    --primary-light: #6c8beb;
+    /* Decorative-only pairing for gradients (hero panels, brand marks). Never
+       used for status or semantic meaning - the semantic palette below is the
+       only source of truth for that. */
+    --accent: #7c4dff;
+    --accent-dark: #5b21c4;
+    --brand-gradient: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+
+    /* semantic */
+    --success: #12704a;
+    --success-soft: #e6f5ee;
+    --success-border: #b5e0c9;
+    --warning: #96560a;
+    --warning-soft: #fdf3e3;
+    --warning-border: #f0d4a4;
+    --danger: #b3261e;
+    --danger-soft: #fdecea;
+    --danger-border: #f5c3bf;
+    --info: var(--primary-dark);
+    --info-soft: var(--primary-soft);
+    --info-border: #c6d5f8;
+    --neutral-soft: #eef0f4;
+
+    /* geometry */
+    --radius-sm: 5px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 1px 2px rgba(17, 32, 46, .06);
+    --shadow: 0 1px 3px rgba(17, 32, 46, .08), 0 1px 2px rgba(17, 32, 46, .05);
+    --shadow-lg: 0 8px 24px rgba(17, 32, 46, .12);
+    --shadow-xl: 0 24px 64px rgba(17, 32, 46, .20), 0 6px 16px rgba(17, 32, 46, .10);
+    --shadow-glow: 0 8px 20px rgba(47, 91, 216, .30);
+    --ease: cubic-bezier(.4, 0, .2, 1);
+
+    /* ---- auth pages only --------------------------------------------
+       A deliberately different, dark palette for login/forgot/reset/404 -
+       every one of the tokens below is referenced only inside ".login-wrap"
+       rules, so nothing outside that shell can be affected by it. Red is
+       used as a single accent against near-black surfaces rather than
+       painted broadly, on purpose: on a dark background red dominates
+       the eye faster than any other hue, so it is spent only on things
+       that are meant to draw the eye - buttons, links, focus states. */
+    --auth-bg: #0a0b0e;
+    --auth-surface: #16171c;
+    --auth-surface-alt: #1e2026;
+    --auth-border: rgba(255, 255, 255, .08);
+    --auth-border-strong: rgba(255, 255, 255, .16);
+    --auth-text: #f3f4f6;
+    --auth-muted: #9aa0ac;
+    --auth-accent: #ef4444;
+    --auth-accent-bright: #f87171;
+    --auth-accent-dark: #7f1d1d;
+    --auth-gradient: linear-gradient(135deg, var(--auth-accent) 0%, var(--auth-accent-dark) 55%, #1a0508 100%);
+    --auth-ring: rgba(239, 68, 68, .38);
+    --auth-glow: 0 10px 28px rgba(239, 68, 68, .32);
+    --auth-danger: #fca5a5;
+    --auth-danger-soft: rgba(239, 68, 68, .14);
+    --auth-danger-border: rgba(239, 68, 68, .35);
+    --auth-success: #86efac;
+    --auth-success-soft: rgba(34, 197, 94, .14);
+    --auth-success-border: rgba(34, 197, 94, .35);
+    --auth-warning: #fbbf24;
+    --auth-warning-soft: rgba(245, 158, 11, .14);
+    --auth-warning-border: rgba(245, 158, 11, .35);
+    --auth-info-soft: rgba(239, 68, 68, .10);
+    --auth-info-border: rgba(239, 68, 68, .3);
+    /* Background wash, drifting blobs, the sidebar-mark's glow, the hero
+       mark's pulse, the demo-account icon tint, the link hover shade, the
+       input placeholder, and the button hover gradient - every one of these
+       was a literal colour before the theme toggle existed. Each is a token
+       now for exactly one reason: so the "Classic" override two screens down
+       can reach it. Nothing changes about how they render today. */
+    --auth-wash-1: rgba(239, 68, 68, .14);
+    --auth-wash-2: rgba(127, 29, 29, .30);
+    --auth-blob-1: rgba(239, 68, 68, .26);
+    --auth-blob-2: rgba(127, 29, 29, .32);
+    --auth-mark-shadow: rgba(239, 68, 68, .4);
+    --auth-pulse-glow: rgba(239, 68, 68, .22);
+    --auth-icon-tint: rgba(239, 68, 68, .16);
+    --auth-link-hover: #fca5a5;
+    --auth-placeholder: #6b7280;
+    --auth-gradient-hover: linear-gradient(135deg, var(--auth-accent-bright) 0%, var(--auth-accent-dark) 60%, #1a0508 100%);
+
+    /* spacing scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+
+    --sidebar-w: 236px;
+    --topbar-h: 56px;
+}
+
+/* ---- 2. reset / base --------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -.01em; }
+h1 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+h2 { font-size: 16px; }
+h3 { font-size: 14px; }
+h4 { font-size: 13px; }
+p { margin: 0 0 var(--space-3); }
+p:last-child { margin-bottom: 0; }
+
+code {
+    font-family: "Cascadia Mono", Consolas, ui-monospace, monospace;
+    font-size: .92em;
+    background: var(--neutral-soft);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
+}
+
+.muted, .hint { color: var(--muted); }
+.hint { font-size: 12px; margin-top: var(--space-1); }
+.small { font-size: 12px; }
+.nowrap { white-space: nowrap; }
+
+/* Visible focus everywhere. Never removed - only restyled. */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* For screen-reader-only labels on icon-style controls. */
+.visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---- 3. app shell ------------------------------------------------------ */
+
+body.app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    min-height: 100vh;
+}
+
+.sidebar {
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: 1px 0 0 rgba(17, 32, 46, .02), 6px 0 24px rgba(17, 32, 46, .03);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: var(--topbar-h);
+    padding: 0 var(--space-5);
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 600;
+    flex: none;
+}
+
+.sidebar-brand:hover { text-decoration: none; }
+
+.sidebar-mark {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    border-radius: 7px;
+    background: var(--brand-gradient);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(47, 91, 216, .35), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+
+.sidebar-brand-text { font-size: 13px; line-height: 1.2; }
+.sidebar-brand-text small {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: var(--space-4) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nav-section {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: var(--space-4) var(--space-3) var(--space-2);
+}
+
+.nav-section:first-child { padding-top: 0; }
+
+.nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 8px var(--space-3);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.3;
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+
+.nav-link:hover { background: var(--surface-alt); text-decoration: none; }
+
+.nav-link[aria-current="page"] {
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+/* A left accent bar reads as "you are here" faster than a colour change alone. */
+.nav-link[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    left: -9px;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    border-radius: var(--radius-pill);
+    background: var(--brand-gradient);
+}
+
+/* Simple geometric glyphs - no icon font, no external request. */
+.nav-ico {
+    width: 16px;
+    flex: none;
+    text-align: center;
+    font-size: 13px;
+    opacity: .75;
+}
+
+.nav-link[aria-current="page"] .nav-ico { opacity: 1; }
+
+.sidebar-foot {
+    flex: none;
+    border-top: 1px solid var(--border);
+    padding: var(--space-3);
+}
+
+.who-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+}
+
+.avatar {
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--brand-gradient);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 12px;
+    box-shadow: 0 2px 6px rgba(47, 91, 216, .3);
+}
+
+.who-name {
+    min-width: 0;
+    line-height: 1.25;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.who-role {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: capitalize;
+}
+
+.sidebar-foot form { margin: 0; }
+.sidebar-foot .btn { width: 100%; margin-top: var(--space-2); justify-content: center; }
+
+/* main column */
+
+.app-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: var(--topbar-h);
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: 0 var(--space-6);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.topbar-title { font-size: 14px; font-weight: 600; }
+.topbar-spacer { flex: 1; }
+
+.sidebar-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 5px 9px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.page {
+    padding: var(--space-6);
+    max-width: 1360px;
+    width: 100%;
+}
+
+/* Narrow column for forms and single-purpose pages, so a 6-field form does
+   not stretch to 1300px and become unreadable. */
+.page.page-narrow { max-width: 860px; }
+
+/* ---- 4. page header ---------------------------------------------------- */
+
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: var(--space-3);
+}
+
+.breadcrumb a { color: var(--muted); }
+.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb .sep { opacity: .5; }
+.breadcrumb [aria-current="page"] { color: var(--text); font-weight: 500; }
+
+.page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.page-head h1 { line-height: 1.25; }
+.page-head .subtitle {
+    color: var(--muted);
+    margin: var(--space-1) 0 0;
+    max-width: 68ch;
+}
+
+.page-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* ---- 5. surfaces ------------------------------------------------------- */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5);
+    margin-bottom: var(--space-4);
+}
+
+.card:last-child { margin-bottom: 0; }
+.card > h3 { margin-bottom: var(--space-3); }
+
+.card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.card-head h3 { margin: 0; }
+
+/* A card whose body is a full-bleed table. */
+.card-flush { padding: 0; overflow: hidden; }
+.card-flush > .card-head { padding: var(--space-4) var(--space-5); margin: 0; border-bottom: 1px solid var(--border); }
+.card-flush .empty { padding: var(--space-8) var(--space-5); }
+
+.stack > * + * { margin-top: var(--space-4); }
+
+.cols-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+
+/* ---- stat tiles ---- */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+}
+
+.stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-3) var(--space-4);
+    display: block;
+    color: inherit;
+    transition: transform .15s var(--ease), box-shadow .15s var(--ease), border-color .15s var(--ease);
+}
+
+a.stat:hover {
+    text-decoration: none;
+    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+a.stat[aria-current="true"] {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.stat-value {
+    font-size: 26px;
+    font-weight: 650;
+    line-height: 1.2;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-value.is-success { color: var(--success); }
+.stat-value.is-warning { color: var(--warning); }
+.stat-value.is-danger  { color: var(--danger); }
+.stat-value.is-primary { color: var(--primary); }
+
+/* Compact inline variant used inside a toolbar rather than as a grid. */
+.stat-inline { display: flex; align-items: baseline; gap: var(--space-2); }
+.stat-inline .stat-value { font-size: 18px; }
+
+/* ---- 6. tabs ----------------------------------------------------------- */
+
+.tabs {
+    display: flex;
+    gap: var(--space-1);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-5);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.tab {
+    flex: none;
+    padding: 9px var(--space-4);
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    background: none;
+    box-shadow: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color .15s var(--ease), border-color .15s var(--ease);
+}
+
+.tab:hover { transform: none; }
+
+.tab:hover { color: var(--text); text-decoration: none; }
+
+.tab[aria-current="page"], .tab[aria-selected="true"] {
+    color: var(--primary-dark);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+}
+
+.tab .count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 0 6px;
+    border-radius: var(--radius-pill);
+    background: var(--neutral-soft);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.tab[aria-current="page"] .count,
+.tab[aria-selected="true"] .count { background: var(--primary-soft); color: var(--primary-dark); }
+
+/* Panels driven by app.js. Hidden by default so the page is not a long
+   scroll before JavaScript runs on a tabbed detail page. */
+.tabpanel[hidden] { display: none; }
+
+/* Segmented control - two or three mutually exclusive modes (e.g. single vs
+   bulk scheduling), where tabs would imply "same data, different filter". */
+.segmented {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    background: var(--neutral-soft);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-5);
+}
+
+.segmented a {
+    padding: 6px var(--space-4);
+    border-radius: var(--radius-sm);
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.segmented a:hover { color: var(--text); text-decoration: none; }
+
+.segmented a[aria-current="page"] {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ---- 7. tables --------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; }
+
+th, td {
+    text-align: left;
+    padding: 10px var(--space-4);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+thead th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--muted);
+    background: var(--surface-alt);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+tbody tr { transition: background-color .12s var(--ease); }
+tbody tr:hover { background: var(--surface-alt); }
+tbody tr:last-child td { border-bottom: none; }
+
+.td-num { text-align: right; font-variant-numeric: tabular-nums; }
+.td-actions { text-align: right; white-space: nowrap; }
+.td-check { width: 34px; }
+
+/* Two lines in one cell: a title and its quieter second line. */
+.cell-title { font-weight: 500; display: block; }
+.cell-sub { display: block; font-size: 12px; color: var(--muted); }
+
+/* Row actions: a primary link plus a "more" menu, rather than five links. */
+.row-actions { display: inline-flex; align-items: center; gap: var(--space-3); justify-content: flex-end; }
+
+.menu { position: relative; display: inline-block; }
+
+.menu-button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    cursor: pointer;
+    color: var(--muted);
+    line-height: 1.2;
+    font: inherit;
+}
+
+.menu-button:hover { background: var(--surface-alt); color: var(--text); }
+
+.menu-list {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 30;
+    min-width: 176px;
+    padding: var(--space-1);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    text-align: left;
+}
+
+.menu-list[hidden] { display: none; }
+
+.menu-list a, .menu-list button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 7px var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.menu-list a:hover, .menu-list button:hover { background: var(--surface-alt); text-decoration: none; transform: none; box-shadow: none; }
+.menu-list .danger { color: var(--danger); }
+.menu-list form { margin: 0; }
+.menu-sep { height: 1px; background: var(--border); margin: var(--space-1) 0; }
+
+/* ---- toolbar above a table ---- */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+}
+
+.toolbar-search { flex: 1 1 280px; min-width: 200px; display: flex; gap: var(--space-2); }
+.toolbar-search input { flex: 1; }
+
+/* Collapsed filter panel. Closed by default so the table is the first thing
+   on screen; opened automatically when a filter is already applied. */
+.filters { margin-bottom: var(--space-4); }
+
+.filters > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+    list-style: none;
+    padding: 7px var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-weight: 500;
+    user-select: none;
+}
+
+.filters > summary::-webkit-details-marker { display: none; }
+.filters > summary:hover { background: var(--surface-alt); }
+.filters[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.filters > summary::after { content: "▾"; color: var(--muted); font-size: 11px; }
+.filters[open] > summary::after { content: "▴"; }
+
+.filters-body {
+    border: 1px solid var(--border);
+    border-radius: 0 var(--radius) var(--radius) var(--radius);
+    background: var(--surface);
+    padding: var(--space-4) var(--space-5);
+    margin-top: -1px;
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.filter-grid .field { margin-bottom: 0; }
+
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ---- pagination ---- */
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border);
+    background: var(--surface-alt);
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.pager-controls { display: flex; align-items: center; gap: var(--space-2); }
+
+/* ---- 8. forms ---------------------------------------------------------- */
+
+/* A form broken into labelled sections instead of one long column. */
+.form-section { border-top: 1px solid var(--border); padding-top: var(--space-5); margin-top: var(--space-5); }
+.form-section:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+.form-section-head { margin-bottom: var(--space-4); }
+.form-section-head h3 { margin-bottom: 2px; }
+.form-section-head p { color: var(--muted); font-size: 12px; margin: 0; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-4);
+}
+
+.form-grid .field { margin-bottom: 0; }
+.field-full { grid-column: 1 / -1; }
+
+.field { margin-bottom: var(--space-4); }
+
+label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text);
+}
+
+.req { color: var(--danger); font-weight: 700; }
+.opt { color: var(--muted); font-weight: 400; text-transform: none; }
+
+input, select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    background: var(--surface);
+    color: var(--text);
+}
+
+input[type="checkbox"], input[type="radio"] { width: auto; margin: 0; accent-color: var(--primary); }
+input[type="file"] { padding: 7px; background: var(--surface-alt); }
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+input:disabled, select:disabled, textarea:disabled {
+    background: var(--surface-alt);
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+input::placeholder { color: #9aa3b0; }
+
+/* Checkbox / radio with its label on one line. */
+.check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-weight: 400;
+    font-size: 13px;
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.check input { margin-top: 3px; flex: none; }
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border);
+}
+
+/* ---- buttons ---- */
+
+button, .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px var(--space-4);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: var(--brand-gradient);
+    box-shadow: var(--shadow-glow);
+    color: #fff;
+    font: inherit;
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform .15s var(--ease), box-shadow .15s var(--ease),
+        background-color .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease);
+}
+
+/* A small lift reads as "pressable" - kept universal across every variant
+   below; only the shadow and colour differ per variant. */
+button:hover, .btn:hover { background: var(--primary-dark); color: #fff; text-decoration: none; transform: translateY(-1px); }
+button:active, .btn:active { transform: translateY(0); }
+button:disabled, .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-secondary, button.btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover, button.btn-secondary:hover { background: var(--surface-alt); color: var(--text); box-shadow: var(--shadow); }
+
+.btn-ghost, button.btn-ghost {
+    background: none;
+    color: var(--muted);
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.btn-ghost:hover, button.btn-ghost:hover { background: var(--surface-alt); color: var(--text); box-shadow: none; }
+
+.btn-danger, button.btn-danger {
+    background: linear-gradient(135deg, var(--danger) 0%, #8f1e17 100%);
+    border-color: var(--danger);
+    box-shadow: 0 8px 20px rgba(179, 38, 30, .28);
+}
+.btn-danger:hover, button.btn-danger:hover { background: #8f1e17; }
+
+.btn-sm, button.btn-sm { padding: 5px var(--space-3); font-size: 12.5px; }
+
+.btn-link, button.btn-link {
+    display: inline;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    color: var(--primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.btn-link:hover, button.btn-link:hover {
+    background: none;
+    text-decoration: underline;
+    color: var(--primary-dark);
+    transform: none;
+    box-shadow: none;
+}
+.btn-link.danger, button.btn-link.danger { color: var(--danger); }
+
+/* ---- 9. feedback ------------------------------------------------------- */
+
+.alert {
+    padding: 10px var(--space-4);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-4);
+    border: 1px solid transparent;
+    font-size: 13px;
+}
+
+.alert:last-child { margin-bottom: 0; }
+.alert strong { font-weight: 600; }
+
+.alert-error   { background: var(--danger-soft);  color: var(--danger);  border-color: var(--danger-border); }
+.alert-success { background: var(--success-soft); color: var(--success); border-color: var(--success-border); }
+.alert-info    { background: var(--info-soft);    color: var(--info);    border-color: var(--info-border); }
+.alert-warning { background: var(--warning-soft); color: var(--warning); border-color: var(--warning-border); }
+
+.badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: var(--radius-pill);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    background: var(--neutral-soft);
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* Status colour is defined once, here, and reused on every screen. */
+.badge-scheduled   { background: var(--info-soft);    color: var(--info); }
+.badge-in_progress { background: var(--warning-soft); color: var(--warning); }
+.badge-completed   { background: var(--success-soft); color: var(--success); }
+.badge-cancelled   { background: var(--neutral-soft); color: var(--muted); }
+.badge-active      { background: var(--warning-soft); color: var(--warning); }
+.badge-abandoned   { background: var(--neutral-soft); color: var(--muted); }
+.badge-danger      { background: var(--danger-soft);  color: var(--danger); }
+.badge-success     { background: var(--success-soft); color: var(--success); }
+.badge-warning     { background: var(--warning-soft); color: var(--warning); }
+
+.rec-badge {
+    display: inline-block;
+    padding: 4px var(--space-4);
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 13px;
+    border: 1px solid transparent;
+}
+
+.rec-recommended     { background: var(--success-soft); color: var(--success); border-color: var(--success-border); }
+.rec-further_review  { background: var(--warning-soft); color: var(--warning); border-color: var(--warning-border); }
+.rec-not_recommended { background: var(--danger-soft);  color: var(--danger);  border-color: var(--danger-border); }
+
+/* ---- empty states ---- */
+
+.empty {
+    padding: var(--space-8) var(--space-5);
+    text-align: center;
+    color: var(--muted);
+}
+
+.empty-title { font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: var(--space-1); }
+.empty p { max-width: 46ch; margin: 0 auto var(--space-4); }
+.empty .btn { margin-top: 0; }
+
+.empty-mark {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto var(--space-3);
+    border-radius: var(--radius);
+    background: var(--neutral-soft);
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+}
+
+/* ---- key/value grid ---- */
+
+.meta-grid {
+    display: grid;
+    grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+    gap: var(--space-2) var(--space-5);
+    font-size: 13px;
+    align-items: baseline;
+}
+
+.meta-grid > span { color: var(--muted); }
+.meta-grid > strong { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+
+/* ---- copyable invite link ---- */
+
+.copy-row { display: flex; gap: var(--space-2); align-items: center; }
+.copy-row input { font-size: 12.5px; font-family: "Cascadia Mono", Consolas, ui-monospace, monospace; }
+
+/* ---- 10. page-specific ------------------------------------------------- */
+
+/* ---- auth pages: login, forgot/reset password, 404 ---------------------
+ *
+ * All four screens share this shell (.login-wrap > .login-card), so the
+ * richer backdrop and card treatment here lifts every one of them without
+ * touching their markup. Only login.html adds the split hero panel further
+ * down - it is the one screen worth making an entrance, because it is also
+ * the only one every single person who ever uses this system will see.
+ */
+
+.login-wrap {
+    position: relative;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: var(--space-6);
+    overflow: hidden;
+    background:
+        radial-gradient(1100px 550px at 12% -10%, var(--auth-wash-1) 0%, transparent 60%),
+        radial-gradient(1100px 550px at 88% 110%, var(--auth-wash-2) 0%, transparent 60%),
+        var(--auth-bg);
+}
+
+/* Two slow-drifting colour washes behind the card - felt more than seen.
+   Purely decorative and never gates anything, so prefers-reduced-motion
+   (global rule, see the responsive section) can freeze them with nothing
+   lost but the motion itself. */
+.login-wrap::before,
+.login-wrap::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    border-radius: 50%;
+    filter: blur(64px);
+    pointer-events: none;
+}
+
+.login-wrap::before {
+    top: -170px;
+    left: -130px;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, var(--auth-blob-1), transparent 70%);
+    animation: auth-drift-a 19s ease-in-out infinite;
+}
+
+.login-wrap::after {
+    bottom: -190px;
+    right: -150px;
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, var(--auth-blob-2), transparent 70%);
+    animation: auth-drift-b 23s ease-in-out infinite;
+}
+
+@keyframes auth-drift-a {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(32px, 26px) scale(1.08); }
+}
+
+@keyframes auth-drift-b {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-26px, -22px) scale(1.05); }
+}
+
+.login-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    overflow: hidden;
+    background: var(--auth-surface);
+    color: var(--auth-text);
+    border: 1px solid var(--auth-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    padding: var(--space-8) var(--space-6);
+    animation: auth-rise .5s var(--ease) both;
+}
+
+/* A thin lit edge rather than a heavy banner - the accent announces itself
+   without competing with the form beneath it. */
+.login-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--auth-gradient);
+}
+
+.login-brand { position: relative; display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+.login-card h1 { font-size: 19px; color: var(--auth-text); }
+.login-card button { width: 100%; justify-content: center; margin-top: var(--space-2); }
+.login-wrap .sidebar-brand-text small { color: var(--auth-muted); }
+
+/* The brand mark that normally matches the sidebar's blue is recoloured only
+   here, by scoping through .login-wrap - the real sidebar is a different part
+   of the DOM and never matches this selector. */
+.login-wrap .sidebar-mark {
+    background: var(--auth-gradient);
+    box-shadow: 0 2px 8px var(--auth-mark-shadow), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+
+@keyframes auth-rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- the grand entrance: login only -------------------------------------
+ *
+ * One elevated surface split into a branded story panel and the sign-in
+ * form, rather than the plain single card every other auth screen uses.
+ * Forgot/reset password and 404 deliberately keep the plain card above -
+ * they are recovery paths, not the front door.
+ */
+
+.auth-frame-split {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    max-width: 960px;
+    background: var(--auth-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    overflow: hidden;
+}
+
+.auth-frame-split .login-card {
+    flex: 1 1 420px;
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    /* Staggered a beat behind the hero, so the eye lands on the brand
+       statement first and the form settles in just after it. */
+    animation-delay: .12s;
+}
+
+.auth-hero {
+    position: relative;
+    flex: 1 1 46%;
+    min-width: 0;
+    overflow: hidden;
+    padding: var(--space-8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-5);
+    background: var(--auth-gradient);
+    color: #fff;
+    animation: auth-rise .55s var(--ease) both;
+}
+
+.auth-hero::before,
+.auth-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .10);
+    pointer-events: none;
+}
+
+.auth-hero::before { width: 260px; height: 260px; top: -100px; right: -80px; }
+.auth-hero::after   { width: 180px; height: 180px; bottom: -70px; left: -50px; background: rgba(255, 255, 255, .08); }
+
+.auth-hero-mark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .16);
+    border: 1px solid rgba(255, 255, 255, .32);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -.02em;
+    animation: auth-pulse 2.6s ease-in-out infinite;
+}
+
+/* A slow ambient pulse - "still watching" - rather than a one-shot flourish.
+   Restrained on purpose: a ring width and an opacity shift, nothing that
+   moves position or competes with the text next to it. */
+@keyframes auth-pulse {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(255, 255, 255, .06); }
+    50%      { box-shadow: 0 0 0 10px var(--auth-pulse-glow); }
+}
+
+.auth-eyebrow {
+    position: relative;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .8);
+}
+
+.auth-hero h1 {
+    position: relative;
+    font-size: 28px;
+    line-height: 1.25;
+    color: #fff;
+    margin: 0;
+}
+
+.auth-hero p {
+    position: relative;
+    color: rgba(255, 255, 255, .84);
+    font-size: 14px;
+    max-width: 42ch;
+}
+
+.auth-features {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.auth-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    font-size: 13px;
+    color: rgba(255, 255, 255, .92);
+}
+
+.auth-feature-tick {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .18);
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 1px;
+}
+
+/* ---- demo accounts: clicking one fills the form, it does not sign in ---- */
+
+.demo-accounts { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+
+.demo-accounts-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--auth-muted);
+    margin-bottom: var(--space-3);
+}
+
+.demo-account {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    background: var(--auth-surface-alt);
+    border: 1px solid var(--auth-border);
+    color: var(--auth-text);
+    box-shadow: none;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-2);
+    text-align: left;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.demo-account:last-child { margin-bottom: 0; }
+
+.demo-account:hover {
+    background: var(--auth-surface-alt);
+    border-color: var(--auth-accent);
+    color: var(--auth-text);
+    box-shadow: 0 0 0 1px var(--auth-accent) inset;
+    transform: translateY(-1px);
+}
+
+.demo-account-icon {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--auth-icon-tint);
+    font-size: 14px;
+}
+
+.demo-account-info { flex: 1; min-width: 0; }
+.demo-account-role { display: block; font-size: 12.5px; font-weight: 600; }
+.demo-account-creds {
+    display: block;
+    font-size: 11px;
+    color: var(--auth-muted);
+    font-family: "Cascadia Mono", Consolas, ui-monospace, monospace;
+}
+
+.demo-account-cta {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--auth-accent-bright);
+    opacity: 0;
+    transition: opacity .15s var(--ease);
+}
+
+.demo-account:hover .demo-account-cta,
+.demo-account:focus-visible .demo-account-cta { opacity: 1; }
+
+/* ---- password field with a show/hide toggle ----------------------------- */
+
+.field-control { position: relative; }
+.field-control input { padding-right: 42px; }
+
+.field-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: var(--auth-muted);
+    padding: 6px 8px;
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+}
+
+.field-toggle:hover { background: var(--auth-surface-alt); color: var(--auth-accent-bright); transform: translateY(-50%); }
+.field-toggle:focus-visible { transform: translateY(-50%); outline-color: var(--auth-accent); }
+
+/* ---- everything else inside the auth shell: text, links, inputs, focus,
+ *      alerts and the primary buttons - scoped to .login-wrap so none of it
+ *      reaches the rest of the application, which keeps its own palette. --
+
+ */
+
+.login-wrap label { color: var(--auth-text); }
+.login-wrap .hint, .login-wrap .muted { color: var(--auth-muted); }
+.login-wrap a { color: var(--auth-accent-bright); }
+.login-wrap a:hover { color: var(--auth-link-hover); }
+.login-wrap :focus-visible { outline-color: var(--auth-accent); }
+
+.login-wrap input,
+.login-wrap select,
+.login-wrap textarea {
+    background: var(--auth-surface-alt);
+    border-color: var(--auth-border-strong);
+    color: var(--auth-text);
+}
+
+.login-wrap input::placeholder { color: var(--auth-placeholder); }
+
+.login-wrap input:focus,
+.login-wrap select:focus,
+.login-wrap textarea:focus {
+    border-color: var(--auth-accent);
+    box-shadow: 0 0 0 3px var(--auth-ring);
+}
+
+.login-wrap .alert-error {
+    background: var(--auth-danger-soft);
+    color: var(--auth-danger);
+    border-color: var(--auth-danger-border);
+}
+
+.login-wrap .alert-success {
+    background: var(--auth-success-soft);
+    color: var(--auth-success);
+    border-color: var(--auth-success-border);
+}
+
+.login-wrap .alert-warning {
+    background: var(--auth-warning-soft);
+    color: var(--auth-warning);
+    border-color: var(--auth-warning-border);
+}
+
+.login-wrap .alert-info {
+    background: var(--auth-info-soft);
+    color: var(--auth-accent-bright);
+    border-color: var(--auth-info-border);
+}
+
+/* The primary action on every auth screen - a bare <button> or the 404
+   page's plain .btn link, never the demo-account or password-toggle
+   buttons, which keep their own quieter styling above. A shine sweeps
+   across on hover: confirmation that the control is interactive, gone
+   as soon as the pointer leaves. */
+.login-wrap button:not([class]),
+.login-wrap a.btn {
+    position: relative;
+    overflow: hidden;
+    background: var(--auth-gradient);
+    box-shadow: var(--auth-glow);
+    border-color: transparent;
+}
+
+.login-wrap button:not([class])::after,
+.login-wrap a.btn::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .35), transparent);
+    transform: skewX(-18deg);
+    transition: left .55s var(--ease);
+    pointer-events: none;
+}
+
+.login-wrap button:not([class]):hover::after,
+.login-wrap a.btn:hover::after { left: 120%; }
+
+.login-wrap button:not([class]):hover,
+.login-wrap a.btn:hover {
+    background: var(--auth-gradient-hover);
+}
+
+/* ---- login page theme toggle --------------------------------------------
+ *
+ * Every rule above this point reads colour only through --auth-* custom
+ * properties - that was already true before this toggle existed, because it
+ * is what let the whole page be re-themed from red to black in one file
+ * earlier. The payoff is here: switching themes means overriding the TOKEN
+ * VALUES on .login-wrap once, not touching a single component rule again.
+ *
+ * "Classic" maps every --auth-* token onto the tokens the rest of the
+ * application already uses (--bg, --surface, --primary, --brand-gradient...),
+ * so it is not a second hand-picked palette - it is, by construction, unable
+ * to drift from whatever the main app looks like.
+ *
+ * Login-only, as asked: the toggle markup lives in login.html, so forgot
+ * password, reset password and the 404 page are unaffected and keep
+ * whichever theme is their (dark, signature) default - see initThemeToggle
+ * in app.js for how the attribute gets set and remembered.
+ */
+
+.login-wrap[data-theme="light"] {
+    --auth-bg: var(--bg);
+    --auth-surface: var(--surface);
+    --auth-surface-alt: var(--surface-alt);
+    --auth-border: var(--border);
+    --auth-border-strong: var(--border-strong);
+    --auth-text: var(--text);
+    --auth-muted: var(--muted);
+
+    --auth-accent: var(--primary);
+    --auth-accent-bright: var(--primary-dark);
+    --auth-accent-dark: var(--primary-dark);
+    --auth-gradient: var(--brand-gradient);
+    --auth-gradient-hover: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
+    --auth-ring: var(--primary-ring);
+    --auth-glow: var(--shadow-glow);
+
+    --auth-danger: var(--danger);
+    --auth-danger-soft: var(--danger-soft);
+    --auth-danger-border: var(--danger-border);
+    --auth-success: var(--success);
+    --auth-success-soft: var(--success-soft);
+    --auth-success-border: var(--success-border);
+    --auth-warning: var(--warning);
+    --auth-warning-soft: var(--warning-soft);
+    --auth-warning-border: var(--warning-border);
+    --auth-info-soft: var(--info-soft);
+    --auth-info-border: var(--info-border);
+
+    --auth-wash-1: rgba(124, 77, 255, .10);
+    --auth-wash-2: rgba(47, 91, 216, .12);
+    --auth-blob-1: rgba(124, 77, 255, .20);
+    --auth-blob-2: rgba(47, 91, 216, .18);
+    --auth-mark-shadow: rgba(47, 91, 216, .35);
+    --auth-pulse-glow: rgba(47, 91, 216, .22);
+    --auth-icon-tint: var(--primary-soft);
+    --auth-link-hover: var(--primary-dark);
+    --auth-placeholder: #9aa3b0;
+}
+
+/* The switch itself. Built from the same --auth-* tokens as everything else
+   on the page, so it re-colours along with the theme it controls rather than
+   needing its own light/dark variant rules. */
+.theme-switch {
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 5;
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    background: var(--auth-surface-alt);
+    border: 1px solid var(--auth-border-strong);
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-lg);
+}
+
+.theme-switch-option {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: var(--auth-muted);
+    padding: 6px 13px;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+
+.theme-switch-option:hover { background: none; color: var(--auth-text); transform: none; }
+
+.theme-switch-option[aria-pressed="true"] {
+    background: var(--auth-accent);
+    color: #fff;
+}
+
+.theme-switch-option[aria-pressed="true"]:hover { color: #fff; }
+
+/* candidate "next up" hero */
+
+.next-up {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(155deg, var(--primary-soft) 0%, var(--surface) 55%);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-6);
+    margin-bottom: var(--space-5);
+}
+
+/* A soft wash of the brand gradient in the corner - felt more than seen. */
+.next-up::before {
+    content: "";
+    position: absolute;
+    top: -80px;
+    right: -80px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: var(--brand-gradient);
+    opacity: .10;
+    pointer-events: none;
+}
+
+.next-up-label {
+    position: relative;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--primary-dark);
+}
+
+.next-up h2 { position: relative; font-size: 22px; margin: var(--space-2) 0; letter-spacing: -.01em; }
+
+.next-up-facts {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: var(--space-5);
+}
+
+.next-up-facts strong { color: var(--text); font-weight: 600; }
+.next-up .btn { position: relative; padding: 10px var(--space-6); font-size: 14.5px; }
+
+/* candidate interview list */
+
+.interview-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.interview-row:last-child { border-bottom: none; }
+.interview-row:hover { background: var(--surface-alt); }
+.interview-row-main { flex: 1 1 260px; min-width: 0; }
+.interview-row-main h3 { margin-bottom: 2px; }
+.interview-row-meta { font-size: 12.5px; color: var(--muted); }
+.interview-row-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+
+.when {
+    flex: none;
+    text-align: center;
+    min-width: 76px;
+    padding: var(--space-2);
+    border-radius: var(--radius);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+}
+
+.when-day { font-size: 17px; font-weight: 700; line-height: 1.1; }
+.when-mon, .when-time { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+/* score presentation */
+
+.score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: var(--space-3);
+}
+
+.score {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+}
+
+.score-value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.2; }
+
+.meter {
+    height: 5px;
+    border-radius: var(--radius-pill);
+    background: var(--neutral-soft);
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.meter > span { display: block; height: 100%; background: var(--primary); border-radius: inherit; }
+
+.overall-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    flex-wrap: wrap;
+}
+
+.overall-value { font-size: 40px; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+
+/* report: per-question blocks */
+
+.q-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.q-head h3 { line-height: 1.45; font-size: 14px; }
+
+.score-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--space-4);
+}
+
+.score-row strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.transcript {
+    background: var(--surface-alt);
+    border-left: 3px solid var(--border-strong);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: var(--space-3) var(--space-4);
+    margin: 0 0 var(--space-3);
+    white-space: pre-wrap;
+}
+
+.transcript.raw { color: var(--muted); }
+
+/* disclosure used for secondary detail inside a card */
+.disclose > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 12.5px;
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.disclose > summary::-webkit-details-marker { display: none; }
+.disclose > summary::before { content: "▸"; font-size: 10px; }
+.disclose[open] > summary::before { content: "▾"; }
+.disclose > summary:hover { color: var(--primary); }
+
+/* selection bar that appears over a table once rows are ticked */
+.selection-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-5);
+    background: var(--text);
+    color: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    margin-top: var(--space-4);
+}
+
+.selection-bar[hidden] { display: none; }
+.selection-bar .btn-secondary { background: rgba(255, 255, 255, .12); color: #fff; border-color: rgba(255, 255, 255, .28); }
+.selection-bar .btn-secondary:hover { background: rgba(255, 255, 255, .2); color: #fff; }
+.selection-count { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* steps, for the bulk scheduling flow */
+
+.steps { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.step-n {
+    width: 18px; height: 18px;
+    flex: none;
+    border-radius: var(--radius-pill);
+    background: var(--neutral-soft);
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.step[aria-current="step"] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); font-weight: 600; }
+.step[aria-current="step"] .step-n { background: var(--primary); color: #fff; }
+.step.done { color: var(--success); border-color: var(--success-border); background: var(--success-soft); }
+.step.done .step-n { background: var(--success); color: #fff; }
+
+/* ---- responsive -------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+    .split { grid-template-columns: minmax(0, 1fr); }
+    .cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+    body.app { grid-template-columns: minmax(0, 1fr); }
+
+    /* Sidebar becomes an overlay drawer; the topbar gains its toggle. */
+    .sidebar {
+        position: fixed;
+        z-index: 40;
+        left: 0; top: 0;
+        width: var(--sidebar-w);
+        transform: translateX(-100%);
+        transition: transform .18s ease;
+        box-shadow: var(--shadow-lg);
+    }
+
+    body.nav-open .sidebar { transform: none; }
+
+    body.nav-open::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 35;
+        background: rgba(17, 32, 46, .4);
+    }
+
+    .sidebar-toggle { display: inline-flex; }
+    .page { padding: var(--space-4); }
+    .cols-2, .cols-3 { grid-template-columns: minmax(0, 1fr); }
+
+    /* The hero keeps its brand and tagline but drops the feature list, so
+       the sign-in form is not pushed below the fold on a shorter screen. */
+    .auth-frame-split { flex-direction: column; max-width: 480px; }
+    .auth-hero { padding: var(--space-6); gap: var(--space-3); }
+    .auth-hero h1 { font-size: 22px; }
+    .auth-features { display: none; }
+}
+
+@media (max-width: 640px) {
+    .page-head { flex-direction: column; align-items: stretch; }
+    .page-actions .btn { flex: 1; justify-content: center; }
+    .meta-grid { grid-template-columns: minmax(0, 1fr); gap: 0 0; }
+    .meta-grid > span { margin-top: var(--space-3); }
+    .form-actions .btn, .form-actions button { flex: 1; justify-content: center; }
+    .theme-switch { top: var(--space-2); right: var(--space-2); }
+}
+
+/* Users who prefer less motion get none. */
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}
+
+/* ---- print (the report is normally printed or saved as PDF) ------------ */
+
+@media print {
+    body.app { display: block; background: #fff; }
+    .sidebar, .topbar, .no-print, .tabs, .page-actions { display: none !important; }
+    .page { max-width: none; padding: 0; }
+    .card { box-shadow: none; border-color: #ccc; break-inside: avoid; page-break-inside: avoid; }
+    .tabpanel[hidden] { display: block !important; }   /* print every tab */
+    .disclose > summary { display: none; }
+    .disclose[open] > *, .disclose > * { display: revert; }
+    h2 { break-after: avoid; }
+    a { color: inherit; text-decoration: none; }
+}

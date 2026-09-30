@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Interview Details')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('interviews')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Interview details')}"></div>
+
+    <!--
+      Everything about one interview, in sections rather than a single column.
+
+      A tab is only rendered when the data behind it exists: no session means no
+      Session or Proctoring tab, no report means no Result tab. The page never
+      offers an empty section to click into, and never invents information the
+      system does not hold.
+    -->
+    <main class="page">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/interviews}">Interviews</a>
+            <a sec:authorize="hasRole('RECRUITER')" th:href="@{/recruiter/interviews}">Interviews</a>
+            <span class="sep" aria-hidden="true">/</span>
+            <span aria-current="page" th:text="${detail.displayName()}">Interview</span>
+        </nav>
+
+        <div class="page-head">
+            <div>
+                <h1 th:text="${detail.displayName()}">Interview</h1>
+                <p class="subtitle">
+                    <span class="badge"
+                          th:classappend="'badge-' + ${#strings.toLowerCase(detail.interview().status())}"
+                          th:text="${#strings.replace(detail.interview().status(),'_',' ')}">STATUS</span>
+                    &nbsp;<span th:text="${detail.interview().candidateName()}">Candidate</span>
+                    &middot; <span th:text="${detail.interview().scheduledAtText()}">date</span>
+                </p>
+            </div>
+
+            <!-- Edit and delete only make sense before the candidate has
+                 started; the server enforces this independently either way. -->
+            <div class="page-actions">
+                <a class="btn btn-secondary" th:if="${detail.hasReport()}"
+                   th:href="@{'/reports/' + ${detail.sessionId()}}">View report</a>
+
+                <th:block th:if="${detail.interview().status().name() == 'SCHEDULED'}">
+                    <a class="btn btn-secondary" th:href="@{${editHref}}">Edit</a>
+                    <form th:action="@{${deleteHref}}" method="post" style="display:inline">
+                        <button type="submit" class="btn-danger"
+                                data-confirm="Delete this scheduled interview? This cannot be undone.">
+                            Delete
+                        </button>
+                    </form>
+                </th:block>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div data-tabs>
+            <div class="tabs" role="tablist" aria-label="Interview sections">
+                <button type="button" class="tab" role="tab" id="tab-overview"
+                        aria-controls="panel-overview">Overview</button>
+                <button type="button" class="tab" role="tab" id="tab-access"
+                        aria-controls="panel-access"
+                        th:if="${detail.interview().status().name() != 'CANCELLED'}">Invite link</button>
+                <button type="button" class="tab" role="tab" id="tab-session"
+                        aria-controls="panel-session"
+                        th:if="${detail.sessionId() != null}">Session</button>
+                <button type="button" class="tab" role="tab" id="tab-result"
+                        aria-controls="panel-result" th:if="${detail.hasReport()}">Result</button>
+                <button type="button" class="tab" role="tab" id="tab-proctoring"
+                        aria-controls="panel-proctoring"
+                        th:unless="${#lists.isEmpty(detail.observations())}">Proctoring</button>
+            </div>
+
+            <!-- ---- overview ------------------------------------------------ -->
+            <div class="tabpanel" role="tabpanel" id="panel-overview"
+                 aria-labelledby="tab-overview" tabindex="0">
+                <div class="cols-2">
+                    <section class="card">
+                        <h3>Interview</h3>
+                        <div class="meta-grid">
+                            <span>Name</span>
+                            <strong th:text="${detail.interview().interviewName() != null}
+                                             ? ${detail.interview().interviewName()} : 'Not named'">Name</strong>
+                            <span>Interview ID</span><strong th:text="${detail.interview().id()}">0</strong>
+                            <span>Domain</span><strong th:text="${detail.interview().domain()}">Java</strong>
+                            <span>Type</span>
+                            <strong th:text="${detail.interview().interviewType().name() == 'TECHNICAL'}
+                                             ? 'Technical' : 'HR / General'">Technical</strong>
+                            <span>Questions</span><strong th:text="${detail.interview().questionCount()}">5</strong>
+                            <!-- Already resolved, so this shows what will actually
+                                 happen rather than the raw "inherit". -->
+                            <span>Question mode</span>
+                            <strong th:text="${detail.interview().questionMode().label()}">Fixed set</strong>
+                            <span>Test duration</span>
+                            <strong th:text="${detail.interview().durationMinutes()} + ' min'">30 min</strong>
+                            <span>Scheduled</span><strong th:text="${detail.interview().scheduledAtText()}">date</strong>
+                            <span>Status</span>
+                            <strong th:text="${#strings.replace(detail.interview().status(),'_',' ')}">STATUS</strong>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <h3>Candidate &amp; recruiter</h3>
+                        <div class="meta-grid">
+                            <span>Candidate</span><strong th:text="${detail.interview().candidateName()}">Candidate</strong>
+                            <span>Email</span><strong th:text="${detail.interview().candidateEmail()}">email</strong>
+                            <span>Experience</span>
+                            <strong>
+                                <span th:text="${#strings.capitalize(#strings.toLowerCase(detail.interview().candidateType()))}">Fresher</span>
+                                <span th:if="${detail.interview().experienceYears() != null}"
+                                      th:text="'(' + ${detail.interview().experienceYears()} + ' years)'"></span>
+                            </strong>
+                            <span>Scheduled by</span><strong th:text="${detail.interview().recruiterName()}">Recruiter</strong>
+                            <span>Result shared</span>
+                            <strong th:text="${detail.interview().resultVisibleToCandidate()}
+                                             ? 'Yes - the candidate can see their result'
+                                             : 'No - only staff can see the result'">No</strong>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="card" th:if="${detail.sessionId() == null}">
+                    <div class="alert alert-info" style="margin:0">
+                        The candidate has not started this interview yet, so there is no session,
+                        result or proctoring data to show.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ---- invite link --------------------------------------------- -->
+            <div class="tabpanel" role="tabpanel" id="panel-access" aria-labelledby="tab-access"
+                 tabindex="0" hidden th:if="${detail.interview().status().name() != 'CANCELLED'}">
+                <section class="card">
+                    <h3>Invite link</h3>
+                    <div class="copy-row">
+                        <label class="visually-hidden" for="invite">Invite link</label>
+                        <input type="text" id="invite" readonly class="invite-link"
+                               th:attr="data-token=${detail.interview().inviteToken()}" value="">
+                        <button type="button" class="btn btn-secondary" data-copy="#invite">Copy</button>
+                    </div>
+                    <p class="hint" style="margin-top:10px">
+                        The link alone is not access. The candidate must sign in with their own
+                        account, and it must be the account this interview was scheduled for &mdash;
+                        anyone else's browser gets "not found".
+                    </p>
+                </section>
+            </div>
+
+            <!-- ---- session ------------------------------------------------- -->
+            <div class="tabpanel" role="tabpanel" id="panel-session" aria-labelledby="tab-session"
+                 tabindex="0" hidden th:if="${detail.sessionId() != null}">
+                <section class="card">
+                    <h3>Session</h3>
+                    <div class="meta-grid">
+                        <span>Session ID</span><strong th:text="${detail.sessionId()}">0</strong>
+                        <span>Status</span>
+                        <strong>
+                            <span class="badge" th:classappend="'badge-' + ${#strings.toLowerCase(detail.sessionStatus())}"
+                                  th:text="${detail.sessionStatus()}">ACTIVE</span>
+                        </strong>
+                        <span>Answers submitted</span><strong th:text="${detail.answerCount()}">0</strong>
+                        <span>Camera granted</span><strong th:text="${detail.cameraGranted()} ? 'Yes' : 'No'">Yes</strong>
+                        <span>Microphone granted</span><strong th:text="${detail.micGranted()} ? 'Yes' : 'No'">Yes</strong>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ---- result -------------------------------------------------- -->
+            <div class="tabpanel" role="tabpanel" id="panel-result" aria-labelledby="tab-result"
+                 tabindex="0" hidden th:if="${detail.hasReport()}">
+                <section class="card overall-card">
+                    <div>
+                        <div class="stat-label">Overall</div>
+                        <div class="overall-value" th:text="${detail.overallScore()} + '%'">0%</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="stat-label">Recommendation</div>
+                        <span class="rec-badge"
+                              th:classappend="'rec-' + ${#strings.toLowerCase(detail.recommendation())}"
+                              th:text="${#strings.replace(detail.recommendation(),'_',' ')}">RECOMMENDED</span>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h3>Scores</h3>
+                    <div class="score-grid">
+                        <div class="score">
+                            <div class="stat-label">Technical</div>
+                            <div class="score-value" th:text="${detail.technicalScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${detail.technicalScore()} + '%'"></span></div>
+                        </div>
+                        <div class="score">
+                            <div class="stat-label">Problem solving</div>
+                            <div class="score-value" th:text="${detail.problemSolvingScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${detail.problemSolvingScore()} + '%'"></span></div>
+                        </div>
+                        <div class="score">
+                            <div class="stat-label">Communication</div>
+                            <div class="score-value" th:text="${detail.communicationScore()} + '%'">0%</div>
+                            <div class="meter"><span th:style="'width:' + ${detail.communicationScore()} + '%'"></span></div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <a class="btn" th:href="@{'/reports/' + ${detail.sessionId()}}">View full report</a>
+                        <a class="btn btn-secondary"
+                           th:href="@{'/reports/' + ${detail.sessionId()} + '/export.pdf'}">Download PDF</a>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ---- proctoring ---------------------------------------------
+                 Counts only; the full timeline lives on the report. -->
+            <div class="tabpanel" role="tabpanel" id="panel-proctoring" aria-labelledby="tab-proctoring"
+                 tabindex="0" hidden th:unless="${#lists.isEmpty(detail.observations())}">
+                <section class="card">
+                    <h3>Proctoring observations</h3>
+                    <div class="alert alert-info">
+                        <strong>These are observations, not proof of misconduct.</strong>
+                        They come from automated detection running in the candidate's browser,
+                        which can be wrong. They never reduced the scores; at most they held a
+                        result at "further review" so a person would look at it.
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th scope="col">Observation</th>
+                                <th scope="col" class="td-num">Times</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="o : ${detail.observations()}">
+                                <td th:text="${#strings.replace(o.type(),'_',' ')}">TYPE</td>
+                                <td class="td-num" th:text="${o.count()}">0</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="hint" th:if="${detail.hasReport()}" style="margin-top:12px">
+                        The full timeline, with durations and confidence, is on the
+                        <a th:href="@{'/reports/' + ${detail.sessionId()}}">report</a>.
+                    </p>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

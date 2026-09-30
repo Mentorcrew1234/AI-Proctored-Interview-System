@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('My Interviews')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar(${navActive})}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('My Interviews')}"></div>
+
+    <main class="page">
+
+        <div class="page-head">
+            <div>
+                <h1 th:text="'Hello, ' + ${user.fullName}">Hello</h1>
+                <p class="subtitle">
+                    Everything scheduled for you is here. Use Google Chrome or Microsoft Edge on a
+                    desktop or laptop &mdash; you will be asked for camera and microphone access
+                    before an interview begins.
+                </p>
+            </div>
+        </div>
+
+        <!-- ---- nothing scheduled ------------------------------------------ -->
+        <div class="card" th:if="${dashboard.isEmpty()}">
+            <div class="empty">
+                <div class="empty-mark" aria-hidden="true">&#128197;</div>
+                <div class="empty-title">You have no interviews yet</div>
+                <p>
+                    When your recruiter schedules an interview for you it will appear here,
+                    with a button to start it at the scheduled time.
+                </p>
+            </div>
+        </div>
+
+        <th:block th:unless="${dashboard.isEmpty()}">
+
+            <!-- ---- the one thing to do next -------------------------------
+                 A candidate's whole question is "what do I need to attend?", so
+                 the answer is the first thing on the page rather than something
+                 to find in a list. -->
+            <th:block th:with="next=${dashboard.nextUp()}">
+                <section class="next-up" th:if="${next != null}">
+                    <div class="next-up-label"
+                         th:text="${next.status().name() == 'IN_PROGRESS'} ? 'In progress' : 'Next interview'">
+                        Next interview
+                    </div>
+                    <h2 th:text="${next.displayName()}">Interview name</h2>
+
+                    <div class="next-up-facts">
+                        <span><strong th:text="${next.scheduledDateText()}">date</strong></span>
+                        <span><strong th:text="${next.scheduledTimeText()}">time</strong></span>
+                        <span th:text="${next.domain()}">Java</span>
+                        <span th:text="${next.interviewType().name() == 'TECHNICAL'} ? 'Technical' : 'HR / General'">Technical</span>
+                        <span th:text="${next.questionCount()} + ' questions'">5 questions</span>
+                    </div>
+
+                    <a th:if="${next.status().name() == 'IN_PROGRESS'}"
+                       class="btn" th:href="@{'/exam/' + ${next.inviteToken()}}">Resume interview</a>
+
+                    <a th:if="${next.status().name() == 'SCHEDULED' and next.startable()}"
+                       class="btn" th:href="@{'/exam/' + ${next.inviteToken()}}">Start interview</a>
+
+                    <p class="hint" th:if="${next.status().name() == 'SCHEDULED' and !next.startable()}"
+                       style="margin:0">
+                        This interview opens at its scheduled time. Come back then and the
+                        Start button will appear here.
+                    </p>
+                </section>
+            </th:block>
+
+            <!-- ---- everything else, one section at a time -----------------
+                 Each list is iterated by a th:block wrapper with th:replace on
+                 an INNER element. Putting both on one element does not work:
+                 th:replace (precedence 100) is evaluated before th:each (200),
+                 so the fragment is included exactly once with the loop variable
+                 still unbound, and the first row.* call fails on null.
+                 Tabs rather than five stacked lists: the data is already loaded,
+                 so switching costs no request, and the page stops being a long
+                 scroll of headings a candidate has to read past. -->
+            <div data-tabs>
+                <div class="tabs" role="tablist" aria-label="My interviews">
+                    <button type="button" class="tab" role="tab" id="tab-today"
+                            aria-controls="panel-today">
+                        Today <span class="count" th:text="${#lists.size(dashboard.today())}">0</span>
+                    </button>
+                    <button type="button" class="tab" role="tab" id="tab-upcoming"
+                            aria-controls="panel-upcoming">
+                        Upcoming <span class="count" th:text="${#lists.size(dashboard.upcoming())}">0</span>
+                    </button>
+                    <button type="button" class="tab" role="tab" id="tab-in_progress"
+                            th:if="${!#lists.isEmpty(dashboard.inProgress())}"
+                            aria-controls="panel-in_progress">
+                        In progress <span class="count" th:text="${#lists.size(dashboard.inProgress())}">0</span>
+                    </button>
+                    <button type="button" class="tab" role="tab" id="tab-completed"
+                            aria-controls="panel-completed">
+                        Completed <span class="count" th:text="${#lists.size(dashboard.completed())}">0</span>
+                    </button>
+                    <button type="button" class="tab" role="tab" id="tab-cancelled"
+                            th:if="${!#lists.isEmpty(dashboard.cancelled())}"
+                            aria-controls="panel-cancelled">
+                        Cancelled <span class="count" th:text="${#lists.size(dashboard.cancelled())}">0</span>
+                    </button>
+                </div>
+
+                <div class="card card-flush tabpanel" role="tabpanel" id="panel-today"
+                     aria-labelledby="tab-today" tabindex="0">
+                    <div class="empty" th:if="${#lists.isEmpty(dashboard.today())}">
+                        <div class="empty-title">Nothing today</div>
+                        <p>You have no interview scheduled for today. Check the Upcoming tab for what is next.</p>
+                    </div>
+                    <th:block th:each="row : ${dashboard.today()}">
+                        <div th:replace="~{fragments/interview-card :: interviewRow(${row})}"></div>
+                    </th:block>
+                </div>
+
+                <div class="card card-flush tabpanel" role="tabpanel" id="panel-upcoming"
+                     aria-labelledby="tab-upcoming" tabindex="0" hidden>
+                    <div class="empty" th:if="${#lists.isEmpty(dashboard.upcoming())}">
+                        <div class="empty-title">No upcoming interviews</div>
+                        <p>You don't have any interviews scheduled for a later date.</p>
+                    </div>
+                    <th:block th:each="row : ${dashboard.upcoming()}">
+                        <div th:replace="~{fragments/interview-card :: interviewRow(${row})}"></div>
+                    </th:block>
+                </div>
+
+                <div class="card card-flush tabpanel" role="tabpanel" id="panel-in_progress"
+                     th:if="${!#lists.isEmpty(dashboard.inProgress())}"
+                     aria-labelledby="tab-in_progress" tabindex="0" hidden>
+                    <th:block th:each="row : ${dashboard.inProgress()}">
+                        <div th:replace="~{fragments/interview-card :: interviewRow(${row})}"></div>
+                    </th:block>
+                </div>
+
+                <div class="card card-flush tabpanel" role="tabpanel" id="panel-completed"
+                     aria-labelledby="tab-completed" tabindex="0" hidden>
+                    <div class="empty" th:if="${#lists.isEmpty(dashboard.completed())}">
+                        <div class="empty-title">No completed interviews</div>
+                        <p>
+                            Once you finish an interview it moves here. Your result appears only
+                            if your recruiter chose to share it.
+                        </p>
+                    </div>
+                    <th:block th:each="row : ${dashboard.completed()}">
+                        <div th:replace="~{fragments/interview-card :: interviewRow(${row})}"></div>
+                    </th:block>
+                </div>
+
+                <div class="card card-flush tabpanel" role="tabpanel" id="panel-cancelled"
+                     th:if="${!#lists.isEmpty(dashboard.cancelled())}"
+                     aria-labelledby="tab-cancelled" tabindex="0" hidden>
+                    <th:block th:each="row : ${dashboard.cancelled()}">
+                        <div th:replace="~{fragments/interview-card :: interviewRow(${row})}"></div>
+                    </th:block>
+                </div>
+            </div>
+        </th:block>
+    </main>
+</div>
+</body>
+</html>

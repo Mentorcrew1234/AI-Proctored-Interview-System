@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head th:replace="~{fragments/layout :: head('Bulk Scheduling Result')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('bulk')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Bulk scheduling result')}"></div>
+
+    <main class="page">
+
+        <div class="page-head">
+            <div>
+                <h1>Bulk scheduling complete</h1>
+                <p class="subtitle">
+                    Every interview below is an ordinary interview &mdash; it was created through
+                    the same service the single form uses.
+                </p>
+            </div>
+            <!-- Both staff roles reach this page, and /recruiter/** is closed to
+                 an admin, so the return link follows the role rather than
+                 sending an admin to a 403. -->
+            <div class="page-actions">
+                <a sec:authorize="hasRole('RECRUITER')" class="btn"
+                   th:href="@{/recruiter/interviews}">View scheduled interviews</a>
+                <a sec:authorize="hasRole('ADMIN')" class="btn"
+                   th:href="@{/admin/interviews}">View scheduled interviews</a>
+                <a class="btn btn-secondary"
+                   th:href="@{'/scheduling/bulk/report/' + ${result.batchId()}}">Download result report</a>
+            </div>
+        </div>
+
+        <div class="alert alert-info" th:if="${alreadyScheduled}">
+            This upload was already scheduled. Showing the original result &mdash; nothing was
+            scheduled a second time.
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Scheduled</div>
+                <div class="stat-value is-success" th:text="${result.scheduled()}">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Failed</div>
+                <div class="stat-value" th:classappend="${result.failed() > 0} ? 'is-danger'"
+                     th:text="${result.failed()}">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Skipped (invalid)</div>
+                <div class="stat-value" th:text="${result.skippedInvalid()}">0</div>
+            </div>
+        </div>
+
+        <!-- ---- new accounts: the only chance to read these passwords ------ -->
+        <section class="card card-flush" th:unless="${#lists.isEmpty(result.createdAccounts())}">
+            <div class="card-head">
+                <h3>New candidate accounts
+                    <span class="badge" th:text="${#lists.size(result.createdAccounts())}">0</span>
+                </h3>
+                <a class="btn btn-sm"
+                   th:href="@{'/scheduling/bulk/report/' + ${result.batchId()}}">Download</a>
+            </div>
+            <div style="padding:0 20px">
+                <div class="alert alert-warning">
+                    <strong>Save these now.</strong> These accounts were created for candidates who
+                    did not already have one. The password is never stored in readable form, and
+                    this page and the downloadable report are the only places it appears. There is
+                    no email integration &mdash; you must send these credentials yourself.
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Temporary password</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${result.createdAccounts()}">
+                        <td th:text="${row.candidateName()}">name</td>
+                        <td th:text="${row.candidateEmail()}">email</td>
+                        <td><code th:text="${row.generatedPassword()}">password</code></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ---- failures: they need action ---- -->
+        <section class="card card-flush" th:unless="${#lists.isEmpty(result.failures())}">
+            <div class="card-head">
+                <h3>Failed <span class="badge badge-danger" th:text="${result.failed()}">0</span></h3>
+            </div>
+            <div style="padding:0 20px">
+                <div class="alert alert-error">
+                    These rows passed checking but could not be created. Nothing was scheduled for
+                    them, so they can safely be corrected and re-uploaded.
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Excel row</th>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Reason</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${result.failures()}">
+                        <td th:text="${row.excelRowNumber()}">0</td>
+                        <td th:text="${row.candidateName()}">name</td>
+                        <td th:text="${row.reason()}">reason</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ---- what was created ---- -->
+        <section class="card card-flush" th:unless="${#lists.isEmpty(result.scheduledRows())}">
+            <div class="card-head">
+                <h3>Scheduled interviews
+                    <span class="badge badge-success" th:text="${result.scheduled()}">0</span>
+                </h3>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Row</th>
+                        <th scope="col">Interview</th>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">Scheduled</th>
+                        <th scope="col">Invite link</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${result.scheduledRows()}">
+                        <td th:text="${row.excelRowNumber()}">0</td>
+                        <td>
+                            <span class="cell-title" th:text="${row.interviewName()}">Interview name</span>
+                            <span class="cell-sub" th:text="${row.domain()}">Java</span>
+                        </td>
+                        <td>
+                            <span class="cell-title" th:text="${row.candidateName()}">name</span>
+                            <span class="cell-sub" th:text="${row.candidateEmail()}">email</span>
+                        </td>
+                        <td class="nowrap" th:text="${row.scheduledAtText()}">date</td>
+                        <td>
+                            <label class="visually-hidden"
+                                   th:for="'invite-' + ${row.excelRowNumber()}">Invite link</label>
+                            <input type="text" readonly class="invite-link"
+                                   th:id="'invite-' + ${row.excelRowNumber()}"
+                                   th:attr="data-token=${row.inviteToken()}" value=""
+                                   style="min-width:260px">
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="card">
+            <a class="btn btn-secondary" th:href="@{/scheduling/bulk}">Upload another file</a>
+        </div>
+    </main>
+</div>
+</body>
+</html>

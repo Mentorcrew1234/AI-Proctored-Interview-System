@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!--
+  Candidates, scoped to whoever is looking.
+
+  One template for both staff roles, exactly as the interview list is. The
+  difference is entirely in the data: a recruiter's list holds only candidates
+  they scheduled, an administrator's holds everyone. Nothing here decides that -
+  CandidateViewService does, in the query.
+
+  The filter dropdowns are built from the caller's own candidates, never from a
+  fixed list and never from a global query: a college or a city that only
+  appears on someone else's candidate would disclose that the candidate exists.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Candidates')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('candidates')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Candidates')}"></div>
+
+    <main class="page">
+        <div class="page-head">
+            <div>
+                <h1>Candidates</h1>
+                <p class="subtitle" th:if="${isAdmin}">
+                    Everyone who has been scheduled for an interview.
+                </p>
+                <p class="subtitle" th:unless="${isAdmin}">
+                    People you have interviewed. Candidates scheduled by someone else
+                    are not listed.
+                </p>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <!-- ---- search + filters ------------------------------------------
+             One GET form. Every control is a plain form field, so applying,
+             changing and clearing a filter are all just a submission - there is
+             no client-side state to fall out of step with the results. -->
+        <form method="get" th:action="@{${basePath} + '/candidates'}" th:object="${filter}">
+            <div class="card">
+                <div class="toolbar">
+                    <div class="field" style="margin:0;flex:1">
+                        <label for="search" class="sr-only">Search candidates</label>
+                        <input type="search" id="search" name="search" th:value="*{search}"
+                               placeholder="Search by name or email">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">Search</button>
+                    <button type="button" class="btn btn-secondary" data-toggle="#candidate-filters"
+                            aria-expanded="false">Filters</button>
+                    <a th:if="${filter.hasActiveFilters()}" class="btn btn-ghost"
+                       th:href="@{${basePath} + '/candidates'}">Clear all</a>
+                </div>
+
+                <!-- Open on arrival when a filter is already applied, so nothing
+                     is silently narrowing the results out of sight. -->
+                <div class="filters-body" id="candidate-filters"
+                     th:attr="hidden=${filter.hasAdvancedFilters()} ? null : 'hidden'">
+                    <div class="filter-grid">
+                        <div class="field">
+                            <label for="collegeName">College</label>
+                            <select id="collegeName" name="collegeName">
+                                <option value="">Any college</option>
+                                <option th:each="c : ${filterOptions.colleges()}" th:value="${c}"
+                                        th:text="${c}" th:selected="${filter.collegeName == c}">C</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="location">Location</label>
+                            <select id="location" name="location">
+                                <option value="">Any location</option>
+                                <option th:each="l : ${filterOptions.locations()}" th:value="${l}"
+                                        th:text="${l}" th:selected="${filter.location == l}">L</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="skill">Skill</label>
+                            <select id="skill" name="skill">
+                                <option value="">Any skill</option>
+                                <option th:each="s : ${filterOptions.skills()}" th:value="${s}"
+                                        th:text="${s}" th:selected="${filter.skill == s}">S</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="domain">Primary domain</label>
+                            <select id="domain" name="domain">
+                                <option value="">Any domain</option>
+                                <option th:each="d : ${filterOptions.domains()}" th:value="${d}"
+                                        th:text="${d}" th:selected="${filter.domain == d}">D</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="experienceType">Experience</label>
+                            <select id="experienceType" name="experienceType">
+                                <option value="">Any experience</option>
+                                <option value="FRESHER"
+                                        th:selected="${filter.experienceType != null and filter.experienceType.name() == 'FRESHER'}">Fresher</option>
+                                <option value="EXPERIENCED"
+                                        th:selected="${filter.experienceType != null and filter.experienceType.name() == 'EXPERIENCED'}">Experienced</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="minExperienceYears">Years from</label>
+                            <input type="number" id="minExperienceYears" name="minExperienceYears"
+                                   min="0" max="50" th:value="*{minExperienceYears}">
+                        </div>
+                        <div class="field">
+                            <label for="maxExperienceYears">Years to</label>
+                            <input type="number" id="maxExperienceYears" name="maxExperienceYears"
+                                   min="0" max="50" th:value="*{maxExperienceYears}">
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <button type="submit">Apply filters</button>
+                        <a class="btn btn-ghost" th:href="@{${basePath} + '/candidates'}">Clear all</a>
+                    </div>
+
+                    <p class="hint" th:if="${filterOptions.isEmpty()}" style="margin-top:12px">
+                        No college, location, skill or domain has been recorded for any of
+                        these candidates yet, so there is nothing to filter by. These come
+                        from the candidate profiles, not from a fixed list.
+                    </p>
+                </div>
+            </div>
+        </form>
+
+        <!-- ---- what is currently applied ---------------------------------- -->
+        <div class="chips" th:unless="${#lists.isEmpty(activeFilters)}" style="margin:12px 0">
+            <span class="hint" style="margin:0">Showing:</span>
+            <span class="chip" th:each="af : ${activeFilters}" th:text="${af.label()}">filter</span>
+            <a class="btn btn-ghost btn-sm" th:href="@{${basePath} + '/candidates'}">Clear</a>
+        </div>
+
+        <section class="card">
+            <div class="empty" th:if="${#lists.isEmpty(candidates)}">
+                <div class="empty-title"
+                     th:text="${filter.hasActiveFilters()}
+                              ? 'No candidate matches these filters'
+                              : 'No candidates yet'">No candidates yet</div>
+                <p th:if="${filter.hasActiveFilters()}">
+                    Try removing a filter, or
+                    <a th:href="@{${basePath} + '/candidates'}">clear them all</a>.
+                </p>
+                <p style="margin-bottom:0" th:unless="${filter.hasActiveFilters()}">
+                    A candidate appears here once they have been scheduled for an
+                    interview.
+                </p>
+            </div>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(candidates)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Candidate</th>
+                        <th scope="col">College</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Skills</th>
+                        <th scope="col">Experience</th>
+                        <th scope="col" class="td-num">Interviews</th>
+                        <th scope="col" class="td-num">Completed</th>
+                        <th scope="col">Most recent</th>
+                        <th scope="col" class="td-actions">View</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="c : ${candidates}">
+                        <td>
+                            <a class="cell-title"
+                               th:href="@{${basePath} + '/candidates/' + ${c.candidateId()}}"
+                               th:text="${c.fullName()}">Name</a>
+                            <span class="cell-sub" th:text="${c.email()}">email</span>
+                        </td>
+                        <!-- Null means never recorded, not "no college" - the em dash
+                             says that without claiming anything. -->
+                        <td th:text="${c.collegeName() != null} ? ${c.collegeName()} : '—'">College</td>
+                        <td th:text="${c.location() != null} ? ${c.location()} : '—'">Location</td>
+                        <td>
+                            <span class="chips" th:if="${!#lists.isEmpty(c.skillList())}">
+                                <span class="chip" th:each="s : ${c.skillList()}" th:text="${s}">skill</span>
+                            </span>
+                            <span th:if="${#lists.isEmpty(c.skillList())}">—</span>
+                        </td>
+                        <td class="nowrap" th:text="${c.experienceText()}">Fresher</td>
+                        <!-- Counts are within the viewer's scope: a recruiter sees
+                             their own interviews with this person, not every one. -->
+                        <td class="td-num" th:text="${c.interviewCount()}">0</td>
+                        <td class="td-num" th:text="${c.completedCount()}">0</td>
+                        <td class="nowrap" th:text="${c.latestScheduledAtText()}">date</td>
+                        <td class="td-actions">
+                            <a th:href="@{${basePath} + '/candidates/' + ${c.candidateId()}}">Open</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

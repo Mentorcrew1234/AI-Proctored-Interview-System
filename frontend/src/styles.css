@@ -1,0 +1,468 @@
+/*
+ * The candidate exam screen.
+ *
+ * Separate from the staff stylesheet on purpose - this is a standalone React
+ * bundle with no server-rendered chrome, and the exam must run with no network.
+ * The token values below are kept identical to /css/app.css so the two halves
+ * of the application look like one product; only the tokens are shared, never
+ * the layout, because the exam is a single-task screen rather than an app shell.
+ */
+:root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --surface-alt: #f8fafc;
+    --border: #e2e6ec;
+    --border-strong: #cbd2dc;
+    --text: #17202e;
+    --muted: #5c6675;
+    --primary: #2f5bd8;
+    --primary-dark: #23459f;
+    --primary-ring: rgba(47, 91, 216, .28);
+    --success: #12704a;
+    --success-soft: #e6f5ee;
+    --warning: #96560a;
+    --warning-soft: #fdf3e3;
+    --warning-border: #f0d4a4;
+    --danger: #b3261e;
+    --danger-soft: #fdecea;
+    --neutral-soft: #eef0f4;
+    --radius-sm: 5px;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(17, 32, 46, .08), 0 1px 2px rgba(17, 32, 46, .05);
+    --shadow-lg: 0 16px 40px rgba(17, 32, 46, .14), 0 4px 10px rgba(17, 32, 46, .06);
+    --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--bg);
+}
+
+h1 { font-size: 21px; margin: 0 0 6px; letter-spacing: -.01em; }
+h3 { font-size: 14px; margin: 22px 0 8px; letter-spacing: -.01em; }
+ul { margin: 8px 0 16px; padding-left: 20px; }
+li { margin-bottom: 4px; }
+
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+.centre-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 24px;
+    width: 100%;
+    max-width: 620px;
+}
+
+.card.narrow { max-width: 400px; }
+
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 14px 0 5px;
+}
+
+input {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font: inherit;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+button {
+    margin-top: 16px;
+    margin-right: 8px;
+    padding: 10px 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #fff;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform .15s var(--ease), box-shadow .15s var(--ease), background-color .15s var(--ease);
+}
+
+button:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); }
+button:active:not(:disabled) { transform: translateY(0); }
+button:disabled { background: #b9c0cc; cursor: not-allowed; transform: none; }
+
+button.secondary {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border-strong);
+}
+
+button.secondary:hover { background: var(--surface-alt); }
+
+/* Keyboard focus must stay obvious on every control in the exam. */
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Finishing the test ends it; the button says so before the click does. */
+button.danger {
+    background: var(--danger);
+    color: #fff;
+    border-color: var(--danger);
+}
+
+button.danger:hover:not(:disabled) { background: #8f1e17; }
+
+.alert {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin: 14px 0;
+    font-size: 14px;
+    border: 1px solid transparent;
+}
+
+.alert.error   { background: var(--danger-soft);  color: var(--danger);       border-color: #f5c3bf; }
+.alert.info    { background: #eef2fe;             color: var(--primary-dark); border-color: #c6d5f8; }
+.alert.success { background: var(--success-soft); color: var(--success);      border-color: #b5e0c9; }
+
+/* ---- device check ---- */
+
+.preview {
+    width: 100%;
+    max-height: 260px;
+    background: #0d1117;
+    border-radius: var(--radius);
+    margin: 14px 0;
+    /* Mirrored so it feels like a mirror to the candidate. */
+    transform: scaleX(-1);
+    object-fit: cover;
+}
+
+.check-row {
+    display: grid;
+    grid-template-columns: 14px 150px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.ok   { background: var(--success); }
+.dot.bad  { background: var(--danger); }
+.dot.wait { background: #c9ced6; }
+
+.meter {
+    height: 6px;
+    background: var(--neutral-soft);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 6px 0 10px;
+}
+
+.meter-fill {
+    height: 100%;
+    background: var(--success);
+    transition: width .1s linear;
+}
+
+/* ---- exam ---- */
+
+.exam-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    padding: 20px;
+    align-items: start;
+    min-height: 100vh;
+}
+
+@media (max-width: 860px) {
+    .exam-layout { grid-template-columns: 1fr; }
+}
+
+.exam-side {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    position: sticky;
+    top: 20px;
+}
+
+.exam-side .preview { margin-top: 0; max-height: 200px; }
+.exam-main .card { max-width: none; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--neutral-soft);
+    color: var(--muted);
+    border: 1px solid transparent;
+}
+
+/* Active means "being observed right now", not "you did something wrong". */
+.chip-active {
+    background: var(--warning-soft);
+    color: var(--warning);
+    border-color: var(--warning-border);
+    font-weight: 600;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    font-size: 13px;
+    margin-top: 10px;
+    color: var(--muted);
+}
+
+.detail-grid strong { color: var(--text); }
+
+/* ---- interview ---- */
+
+.question-text {
+    font-size: 19px;
+    line-height: 1.45;
+    margin: 6px 0 18px;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.button-row button { margin-right: 0; }
+
+.progress-row { display: flex; gap: 6px; margin-bottom: 12px; }
+
+.step {
+    flex: 1;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--border);
+}
+
+.step.done { background: var(--success); }
+.step.current { background: var(--primary); }
+
+/* Finishing is deliberate: the confirmation stands out from the page. */
+.confirm-panel {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 2px rgba(168, 100, 0, .15);
+}
+
+.confirm-panel h3 { color: var(--warning); }
+
+/* Users who prefer less motion get none - the same rule the rest of the
+   application uses. */
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}
+
+/* ---- interview mode: NORMAL vs DEMO --------------------------------------
+ *
+ * NORMAL renders a single column and no monitoring UI at all. The camera
+ * element still exists - the detectors read frames from it - but it is taken
+ * out of view rather than removed, because removing it would stop proctoring,
+ * which must behave identically in both modes.
+ */
+
+.exam-layout-plain {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+/* Off-screen rather than display:none: a hidden video element is not required
+   to decode frames, and the detectors need frames. */
+.preview-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    left: -9999px;
+}
+
+/* progress + elapsed time */
+
+.exam-progress { margin-bottom: 16px; }
+
+.exam-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+}
+
+.exam-progress-meta strong { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* time remaining
+   ------------------------------------------------------------------
+   Legible at a glance without competing with the question. It grows and
+   changes colour as time runs out rather than flashing: someone is trying to
+   think, and a blinking element in peripheral vision is genuinely hard to
+   ignore. The steps are colour + weight only, so this still reads correctly
+   for anyone who cannot distinguish the colours. */
+
+.time-remaining {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.time-remaining .time-label { color: var(--muted); }
+
+.time-remaining strong {
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+}
+
+.time-remaining.time-low strong {
+    color: var(--warning, #b26a00);
+    font-size: 16px;
+}
+
+.time-remaining.time-critical strong {
+    color: var(--danger, #b3261e);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+/* fullscreen prompt - a nudge, never a block */
+
+.alert.warn {
+    background: var(--warning-soft);
+    color: var(--warning);
+    border-color: var(--warning-border);
+}
+
+.fullscreen-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fullscreen-notice button { margin: 0; padding: 6px 12px; font-size: 13px; }
+
+/* ---- demo mode ---- */
+
+.demo-banner {
+    background: var(--warning-soft);
+    color: var(--warning);
+    border: 1px solid var(--warning-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+/* Anchors the detection overlay to the preview it describes. */
+.preview-wrap { position: relative; line-height: 0; }
+.preview-wrap .preview { margin: 0 0 12px; }
+
+.detection-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    /* Excludes the preview's bottom margin, so the canvas covers the video
+       exactly rather than the box around it. */
+    height: calc(100% - 12px);
+    pointer-events: none;
+    /* Same mirror as the preview, so a box lands on what it describes. */
+    transform: scaleX(-1);
+    border-radius: var(--radius);
+}
+
+.demo-monitor {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    background: var(--surface-alt);
+}
+
+.demo-monitor-head { display: flex; align-items: center; gap: 8px; }
+.demo-monitor-head h3 { margin: 0; font-size: 13px; }
+.demo-monitor-note { margin: 6px 0 12px; }
+
+.demo-badge {
+    background: var(--warning);
+    color: #fff;
+    border-radius: var(--radius-sm);
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+}
+
+.demo-monitor h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    margin: 14px 0 6px;
+}
+
+.monitor-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+}
+
+.monitor-row:last-of-type { border-bottom: none; }
+.monitor-label { display: flex; align-items: center; gap: 7px; color: var(--muted); }
+.monitor-value { font-variant-numeric: tabular-nums; }

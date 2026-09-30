@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!--
+  One candidate: their interviews and their results, in one place.
+
+  Everything shown is within the viewer's scope. A recruiter sees the interviews
+  they scheduled and nothing else, so the counts on this page are their view of
+  this person rather than the whole picture - which is stated on the page rather
+  than left to be assumed.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Candidate')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('candidates')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Candidate')}"></div>
+
+    <main class="page">
+        <div class="page-head">
+            <div>
+                <h1 th:text="${candidate.fullName()}">Candidate</h1>
+                <p class="subtitle" th:text="${candidate.email()}">email</p>
+            </div>
+            <div class="page-actions">
+                <!-- Editing an account is admin-only, and /admin/** is closed to
+                     a recruiter. Offering the link to one would land them on a
+                     403 - the rule that any page both staff roles reach must
+                     pick its links by role. -->
+                <a th:if="${isAdmin}" class="btn btn-secondary"
+                   th:href="@{'/admin/users/' + ${candidate.candidateId()} + '/edit'}">
+                    Edit details
+                </a>
+                <a class="btn btn-secondary" th:href="@{${basePath} + '/candidates'}">
+                    Back to candidates
+                </a>
+            </div>
+        </div>
+
+        <div th:replace="~{fragments/layout :: flash}"></div>
+
+        <section class="card">
+            <div class="meta-grid">
+                <span>College</span>
+                <strong th:text="${candidate.collegeName() != null}
+                                 ? ${candidate.collegeName()} : 'Not recorded'">College</strong>
+                <span>Location</span>
+                <strong th:text="${candidate.location() != null}
+                                 ? ${candidate.location()} : 'Not recorded'">Location</strong>
+                <span>Skills</span>
+                <strong th:text="${candidate.skills() != null}
+                                 ? ${candidate.skills()} : 'Not recorded'">Skills</strong>
+                <span>Interviews</span>
+                <strong th:text="${candidate.interviewCount()}">0</strong>
+                <span>Completed</span>
+                <strong th:text="${candidate.completedCount()}">0</strong>
+            </div>
+            <p class="hint" style="margin-top:12px" th:unless="${isAdmin}">
+                These are the interviews <strong>you</strong> scheduled. If another
+                recruiter has also interviewed this candidate, those do not appear here.
+            </p>
+        </section>
+
+        <section class="card">
+            <h3>Interviews</h3>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Interview</th>
+                        <th scope="col">Domain</th>
+                        <th scope="col">Scheduled</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="td-num">Result</th>
+                        <th scope="col" class="td-actions">View</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${candidate.interviews()}">
+                        <td>
+                            <a class="cell-title" th:href="@{'/interviews/' + ${i.interviewId()}}"
+                               th:text="${i.displayName()}">Interview</a>
+                        </td>
+                        <td th:text="${i.domain()}">Java</td>
+                        <td class="nowrap" th:text="${i.scheduledAtText()}">date</td>
+                        <td>
+                            <span class="badge"
+                                  th:text="${#strings.replace(i.status(), '_', ' ')}">SCHEDULED</span>
+                        </td>
+                        <!-- A completed interview with no report is a real state,
+                             not a zero - shown as pending rather than dressed up
+                             as a score, exactly as on the reports list. -->
+                        <td class="td-num">
+                            <span th:if="${i.hasReport()}">
+                                <strong th:text="${i.overallScore()} + '%'">0%</strong>
+                                <span class="rec-badge"
+                                      th:classappend="'rec-' + ${#strings.toLowerCase(i.recommendation())}"
+                                      th:text="${#strings.replace(i.recommendation(), '_', ' ')}">REC</span>
+                            </span>
+                            <span th:unless="${i.hasReport()}" class="hint">&mdash;</span>
+                        </td>
+                        <td class="td-actions">
+                            <span class="row-actions">
+                                <a th:href="@{'/interviews/' + ${i.interviewId()}}">Detail</a>
+                                <a th:if="${i.hasReport()}"
+                                   th:href="@{'/reports/' + ${i.sessionId()}}">Report</a>
+                            </span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="hint" style="margin-top:14px" th:unless="${candidate.hasAnyResult()}">
+                No report yet. One appears once an interview has been completed.
+            </p>
+        </section>
+    </main>
+</div>
+</body>
+</html>

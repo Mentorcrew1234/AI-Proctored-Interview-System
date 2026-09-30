@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Dashboard')}"></div>
+
+    <main class="page">
+
+        <div class="page-head">
+            <div>
+                <h1>Your interviews</h1>
+                <p class="subtitle">What you have scheduled, and what needs a look before it slips.</p>
+            </div>
+            <div class="page-actions">
+                <a class="btn btn-secondary" th:href="@{/scheduling/bulk}">Bulk schedule</a>
+                <a class="btn" th:href="@{/recruiter/interviews/new}">Schedule interview</a>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <div class="stats">
+            <a class="stat" th:href="@{/recruiter/interviews(tab='TODAY')}">
+                <div class="stat-label">Today</div>
+                <div class="stat-value is-primary" th:text="${insights.today()}">0</div>
+            </a>
+            <a class="stat" th:href="@{/recruiter/interviews(tab='UPCOMING')}">
+                <div class="stat-label">Upcoming</div>
+                <div class="stat-value" th:text="${insights.upcoming()}">0</div>
+            </a>
+            <a class="stat" th:href="@{/recruiter/interviews(tab='IN_PROGRESS')}">
+                <div class="stat-label">In progress</div>
+                <div class="stat-value is-warning" th:text="${insights.inProgress()}">0</div>
+            </a>
+            <a class="stat" th:href="@{/recruiter/interviews(tab='COMPLETED')}">
+                <div class="stat-label">Completed</div>
+                <div class="stat-value is-success" th:text="${insights.completed()}">0</div>
+            </a>
+            <a class="stat" th:href="@{/recruiter/interviews(tab='ALL')}">
+                <div class="stat-label">Total</div>
+                <div class="stat-value" th:text="${insights.total()}">0</div>
+            </a>
+        </div>
+
+        <div class="split">
+
+            <section class="card card-flush">
+                <div class="card-head">
+                    <h3>Recent interviews</h3>
+                    <a class="btn btn-ghost btn-sm" th:href="@{/recruiter/interviews}">View all</a>
+                </div>
+
+                <div class="empty" th:if="${#lists.isEmpty(interviews)}">
+                    <div class="empty-mark" aria-hidden="true">&#128197;</div>
+                    <div class="empty-title">Nothing scheduled yet</div>
+                    <p>
+                        Schedule one interview, several candidates at once, or a whole drive
+                        from a spreadsheet.
+                    </p>
+                    <a class="btn" th:href="@{/recruiter/interviews/new}">Schedule interview</a>
+                </div>
+
+                <div class="table-wrap" th:unless="${#lists.isEmpty(interviews)}">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th scope="col">Interview</th>
+                            <th scope="col">Candidate</th>
+                            <th scope="col">Scheduled</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="td-actions">Result</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="i : ${interviews}">
+                            <td>
+                                <a class="cell-title" th:href="@{'/interviews/' + ${i.id()}}"
+                                   th:text="${i.displayName()}">Interview</a>
+                                <span class="cell-sub" th:text="${i.domain()}">Java</span>
+                            </td>
+                            <td>
+                                <span class="cell-title" th:text="${i.candidateName()}">Name</span>
+                                <span class="cell-sub" th:text="${i.candidateEmail()}">email</span>
+                            </td>
+                            <td class="nowrap" th:text="${i.scheduledAtText()}">Date</td>
+                            <td>
+                                <span class="badge" th:classappend="'badge-' + ${#strings.toLowerCase(i.status())}"
+                                      th:text="${#strings.replace(i.status(), '_', ' ')}">STATUS</span>
+                            </td>
+                            <td class="td-actions">
+                                <a th:if="${i.hasReport()}" th:href="@{'/reports/' + ${i.sessionId()}}">Report</a>
+                                <span th:unless="${i.hasReport()}" class="hint">&mdash;</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <aside class="card">
+                <div class="card-head">
+                    <h3>Needs attention</h3>
+                    <span class="badge" th:if="${!#lists.isEmpty(attention)}"
+                          th:text="${#lists.size(attention)}">0</span>
+                </div>
+
+                <div class="empty" th:if="${#lists.isEmpty(attention)}" style="padding:24px 0">
+                    <div class="empty-title">All clear</div>
+                    <p style="margin-bottom:0">
+                        Nothing of yours is overdue, stalled or missing a report.
+                    </p>
+                </div>
+
+                <ul style="list-style:none;padding:0;margin:0" th:unless="${#lists.isEmpty(attention)}">
+                    <li th:each="item : ${attention}"
+                        style="padding:10px 0;border-bottom:1px solid var(--border)">
+                        <span class="badge badge-warning" th:text="${item.reason()}">Reason</span>
+                        <a style="display:block;margin-top:4px;font-weight:500"
+                           th:href="@{'/interviews/' + ${item.interviewId()}}"
+                           th:text="${item.displayName()}">Interview</a>
+                        <span class="cell-sub" th:text="${item.candidateName()} + ' · ' + ${item.detail()}">detail</span>
+                    </li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Users')}"></head>
+<body class="app">
+<div th:replace="~{fragments/layout :: sidebar('users')}"></div>
+
+<div class="app-main">
+    <div th:replace="~{fragments/layout :: topbar('Users')}"></div>
+
+    <!--
+      Account management. Candidates and recruiters are the same kind of record
+      differing by role, so they are tabs over one table rather than two pages -
+      the same reasoning as the interview status tabs.
+    -->
+    <main class="page">
+
+        <div class="page-head">
+            <div>
+                <h1>Users</h1>
+                <p class="subtitle">
+                    Recruiter and candidate accounts. Accounts are disabled rather than deleted,
+                    because interviews keep referring to them &mdash; and disabling one revokes its
+                    access immediately, not when its token expires.
+                </p>
+            </div>
+            <div class="page-actions">
+                <a class="btn" th:href="@{/admin/users/new}">Add user</a>
+            </div>
+        </div>
+
+        <th:block th:replace="~{fragments/layout :: flash}"></th:block>
+
+        <nav class="tabs" aria-label="Account type">
+            <a class="tab" th:href="@{/admin/users}"
+               th:attr="aria-current=${selectedRole == null or selectedRole == ''} ? 'page' : null">All</a>
+            <a class="tab" th:href="@{/admin/users(role='RECRUITER')}"
+               th:attr="aria-current=${selectedRole == 'RECRUITER'} ? 'page' : null">Recruiters</a>
+            <a class="tab" th:href="@{/admin/users(role='CANDIDATE')}"
+               th:attr="aria-current=${selectedRole == 'CANDIDATE'} ? 'page' : null">Candidates</a>
+        </nav>
+
+        <!-- ---- search and status ----
+             The role tab is carried as a hidden field so searching stays on the
+             tab you are looking at; switching tabs resets search and status,
+             the same as the interview list's own tabs do. -->
+        <form method="get" th:action="@{/admin/users}">
+            <input type="hidden" name="role" th:value="${selectedRole}">
+            <div class="toolbar">
+                <div class="toolbar-search">
+                    <label class="visually-hidden" for="search">Search users</label>
+                    <input type="search" id="search" name="search" th:value="${search}"
+                           placeholder="Search name or email...">
+                    <button type="submit" class="btn-secondary">Search</button>
+                </div>
+
+                <label class="visually-hidden" for="status">Status</label>
+                <select id="status" name="status" style="width:auto" data-autosubmit>
+                    <option value="" th:selected="${status == null or status == ''}">All statuses</option>
+                    <option value="ENABLED" th:selected="${status == 'ENABLED'}">Enabled</option>
+                    <option value="DISABLED" th:selected="${status == 'DISABLED'}">Disabled</option>
+                </select>
+
+                <a class="btn btn-ghost btn-sm" th:if="${hasFilters}"
+                   th:href="@{/admin/users(role=${selectedRole})}">Clear</a>
+
+                <span class="topbar-spacer"></span>
+                <span class="hint" th:text="${#lists.size(users)} + (${#lists.size(users)} == 1 ? ' account' : ' accounts')">0 accounts</span>
+            </div>
+        </form>
+
+        <div class="card card-flush">
+            <div class="empty" th:if="${#lists.isEmpty(users)}">
+                <div class="empty-mark" aria-hidden="true">&#128100;</div>
+                <div class="empty-title"
+                     th:text="${hasFilters} ? 'No accounts match your search' : 'No accounts here yet'">
+                    No accounts here yet
+                </div>
+                <p th:if="${hasFilters}">
+                    Try a different name or email, or clear the status filter.
+                </p>
+                <p th:unless="${hasFilters}">
+                    Adding a candidate here lets a recruiter schedule an interview for them.
+                </p>
+                <a class="btn btn-secondary" th:if="${hasFilters}"
+                   th:href="@{/admin/users(role=${selectedRole})}">Clear filters</a>
+                <a class="btn" th:unless="${hasFilters}" th:href="@{/admin/users/new}">Add user</a>
+            </div>
+
+            <div class="table-wrap" th:unless="${#lists.isEmpty(users)}">
+                <table>
+                    <caption class="visually-hidden">User accounts</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Role</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="td-actions">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="u : ${users}">
+                        <td>
+                            <span class="cell-title" th:text="${u.fullName()}">Name</span>
+                            <!-- Only candidates have one; a null simply renders nothing. -->
+                            <span class="cell-sub" th:if="${u.collegeName() != null}"
+                                  th:text="${u.collegeName()}">College</span>
+                        </td>
+                        <td th:text="${u.email()}">email</td>
+                        <td><span class="badge" th:text="${#strings.capitalize(#strings.toLowerCase(u.role()))}">Role</span></td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${u.enabled()} ? 'badge-success' : 'badge-cancelled'"
+                                  th:text="${u.enabled()} ? 'Enabled' : 'Disabled'">Enabled</span>
+                        </td>
+                        <td class="td-actions">
+                            <!-- Available for every role, the administrator
+                                 included: a name is a detail like any other, and
+                                 the form cannot reach email, role, password or
+                                 status whoever it is pointed at. -->
+                            <a class="btn btn-secondary btn-sm"
+                               th:href="@{'/admin/users/' + ${u.id()} + '/edit'}">Edit</a>
+                            <!-- The administrator account cannot be disabled; the
+                                 service refuses it either way. -->
+                            <form th:if="${u.role().name() != 'ADMIN'}"
+                                  th:action="@{'/admin/users/' + ${u.id()} + '/toggle'}"
+                                  method="post" style="margin:0;display:inline">
+                                <input type="hidden" name="enabled" th:value="${!u.enabled()}">
+                                <button type="submit" class="btn btn-secondary btn-sm"
+                                        th:attr="data-confirm=${u.enabled()}
+                                                 ? 'Disable this account? They will be signed out and cannot start an interview.' : null"
+                                        th:text="${u.enabled()} ? 'Disable' : 'Enable'">Disable</button>
+                            </form>
+                            <!-- Only a candidate is the SUBJECT of stored interview
+                                 data. Staff own interviews rather than being recorded
+                                 by them, so erasure is not offered for them. -->
+                            <a th:if="${u.role().name() == 'CANDIDATE'}"
+                               class="btn btn-secondary btn-sm"
+                               th:href="@{'/admin/users/' + ${u.id()} + '/data'}">Data</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Keeps the Docker build context small and makes sure secrets can never be
+# COPYed into an image even by accident.
+.git
+.claude
+.github
+graphify-out
+config
+target
+docs
+*.zip
+
+frontend/node_modules
+frontend/dist
+frontend/public/wasm
+src/main/resources/static/exam
+
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

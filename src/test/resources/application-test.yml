@@ -1,0 +1,23 @@
+# Tests run against in-memory H2 with the schema generated from the entities.
+# Flyway is disabled here on purpose: the MySQL migration is verified by starting
+# the real application, while tests stay fast and driver-independent.
+spring:
+  datasource:
+    url: jdbc:h2:mem:proctor;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  flyway:
+    enabled: false
+
+app:
+  seed:
+    enabled: false
+
+logging:
+  level:
+    com.project.proctorinterview: info
